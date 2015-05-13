@@ -68,6 +68,14 @@ def get_logout_exclusion_script(logout_regex):
     return """appCtx.getBean("listRegexFilterOut").regexList.add(java.util.regex.Pattern.compile("%s"))""" % (logout_regex)
 
 def handle_credentials(info, job, api):
+    """Retrieves credentials for a w3act Target and adds these via the Heritrix API.
+
+    Arguments:
+    info --  a w3act info record.
+    job -- Heritrix job name.
+    api -- a python-heritrix instance.
+
+    """
     w = w3act.ACT()
     if "watched" in info.keys() and info["watched"]:
         if info["watchedTarget"]["secretId"] is not None:
@@ -80,26 +88,4 @@ def handle_credentials(info, job, api):
             api.execute(script=get_credential_script(info), job=job, engine="groovy")
             logger.info("Adding login page as a seeds...")
             api.execute(script=get_seeds_script(set([info["watchedTarget"]["loginPageUrl"], secret["url"]])), job=job, engine="groovy")
-
-if __name__ == "__main__":
-    """For testing purposes."""
-    info = json.loads("""{
-        "watched": true,
-        "seeds": [
-            "http://www.hypodiab.com"
-        ],
-        "watchedTarget": {
-            "waybackTimestamp": 20150508100336,
-            "loginPageUrl": "http://www.hypodiab.com/login.aspx",
-            "documentUrlScheme": "www.hypodiab.com/",
-            "logoutUrl": "http://www.hypodiab.com/logout.aspx",
-            "id": 48,
-            "secretId": 1247
-        },
-        "id": 19827,
-        "title": "Diabetic Hypoglycemia"
-    }""")
-    api = heritrix.API(host="https://opera.bl.uk:8443/engine", user="admin", passwd="bl_uk", verbose=False, verify=False)
-    job = "paywall-test-20150422134313"
-    handle_credentials(info, job, api)
 
