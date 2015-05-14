@@ -18,11 +18,28 @@ def scrape_login_page(url, username, password):
     r = requests.get(url)
     h = html.fromstring(r.content)
     path = urlparse(url).path
-    forms = h.xpath("//form[contains(@action, %s)]" % path)
+    forms = h.xpath("//form")
+    form = None
     if len(forms) > 1:
         logger.warning("Multiple forms found!")
-        sys.exit(1)
-    form = forms[0]
+        logger.warning("Looking for 'login'...")
+        for f in forms:
+            if f.xpath("contains(translate(@name, 'LOGIN', 'login'), 'login')"):
+                form = f
+                logger.info("Using form: %s" % form.attrib["name"])
+                break
+        if form is not None:
+            logger.warning("Looking for '%s'..." % path)
+            for f in forms:
+                if f.xpath("contains(@action, %s)" % path):
+                    form = f
+                    logger.info("Using form: %s" % form.xpath("@action"))
+                    break
+        if form is not None:
+            logger.error("Could not determine correct login form: %s" % url)
+            sys.exit(1)
+    else:
+        form = forms[0]
     fields = []
     for f in form.xpath(".//input"):
         if any(val in f.attrib["name"].lower() for val in ["user", "email"]):
@@ -44,7 +61,7 @@ def get_logout_regex(logout_url):
     )
     return logout_regex.replace("\\", "\\\\")
 
-def get_credential_script(info):
+def get_credential_script(info, fields):
     """Generates a Heritrix script to add new credentials."""
     domain = urlparse(info["watchedTarget"]["loginPageUrl"]).netloc
     id = slugify(domain)
@@ -85,7 +102,7 @@ def handle_credentials(info, job, api):
             logger.info("Excluding: %s" % logout_regex)
             api.execute(script=get_logout_exclusion_script(logout_regex), job=job, engine="groovy")
             logger.info("Adding credentials...")
-            api.execute(script=get_credential_script(info), job=job, engine="groovy")
+            api.execute(script=get_credential_script(info, fields), job=job, engine="groovy")
             logger.info("Adding login page as a seeds...")
             api.execute(script=get_seeds_script(set([info["watchedTarget"]["loginPageUrl"], secret["url"]])), job=job, engine="groovy")
 
