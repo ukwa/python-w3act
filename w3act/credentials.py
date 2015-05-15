@@ -104,5 +104,8 @@ def handle_credentials(info, job, api):
             logger.info("Adding credentials...")
             api.execute(script=get_credential_script(info, fields), job=job, engine="groovy")
             logger.info("Adding login page as a seeds...")
-            api.execute(script=get_seeds_script(set([info["watchedTarget"]["loginPageUrl"], secret["url"]])), job=job, engine="groovy")
+            new_seeds = list(set([form_action, info["watchedTarget"]["loginPageUrl"], secret["url"]]))
+            info["seeds"] += new_seeds
+            api.execute(script=get_seeds_script(new_seeds), job=job, engine="groovy")
+    return info
 

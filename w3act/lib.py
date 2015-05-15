@@ -48,3 +48,7 @@ class ACT():
         return self._get_json("%s/secret/%s" % (settings.W3ACT_BASE, secret_id))
         return r.content
 
+    def get_watched_targets(self):
+        all = self.get_ld_export("all")
+        return [w for w in all if "watched" in w.keys() and w["watched"]]
+
