@@ -35,27 +35,13 @@ class Validator(object):
         except AttributeError:
             return True
 
-    def www_gov_uk(self, target, doc, check_siblings=True):
+    def www_gov_uk(self, target, doc):
         """Dept. names appear in a <aside class="meta"/> tag."""
         try:
             r = requests.get(doc["landing_page_url"])
             h = html.fromstring(r.content)
             texts = [t for t in h.xpath("//aside[contains(@class, 'meta')]//a/text()")]
-            if len([t for t in texts if t in target["title"]]) > 0:
-                return True
-            else:
-                if check_siblings:
-                    """Include docs. if they don't belong to other gov.uk Watched Targets."""
-                    if self.watched_targets is None:
-                        self.get_watched_targets()
-                    host = urlparse(doc["landing_page_url"]).netloc
-                    siblings = [t for t in self.watched_targets for u in t["seeds"] if urlparse(u).netloc == host]
-                    for s in siblings:
-                        if self.www_gov_uk(s, doc, check_siblings=False):
-                            return False
-                    return True
-                else:
-                    return False
+            return len([t for t in texts if t in target["title"]]) > 0
         except:
             logger.error("www_gov_uk: %s" % sys.exc_info()[0])
             return False
