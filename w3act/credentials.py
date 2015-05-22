@@ -28,14 +28,14 @@ def scrape_login_page(url, username, password):
                 form = f
                 logger.info("Using form: %s" % form.attrib["name"])
                 break
-        if form is not None:
+        if form is None:
             logger.warning("Looking for '%s'..." % path)
             for f in forms:
                 if f.xpath("contains(@action, %s)" % path):
                     form = f
                     logger.info("Using form: %s" % form.xpath("@action"))
                     break
-        if form is not None:
+        if form is None:
             logger.error("Could not determine correct login form: %s" % url)
             sys.exit(1)
     else:
@@ -54,12 +54,7 @@ def scrape_login_page(url, username, password):
 
 def get_logout_regex(logout_url):
     """Generates the regular expression to avoid the logout page."""
-    parsed = urlparse(logout_url)
-    logout_regex = "https?://(www[0-9]?\\.)?%s%s.*" % (
-        re.escape(re.sub("^www[0-9]?\.", "", parsed.netloc)),
-        re.escape(parsed.path)
-    )
-    return logout_regex.replace("\\", "\\\\")
+    return re.escape(logout_url).replace("\\", "\\\\")
 
 def get_credential_script(info, fields):
     """Generates a Heritrix script to add new credentials."""
@@ -104,7 +99,7 @@ def handle_credentials(info, job, api):
             logger.info("Adding credentials...")
             api.execute(script=get_credential_script(info, fields), job=job, engine="groovy")
             logger.info("Adding login page as a seeds...")
-            new_seeds = list(set([form_action, info["watchedTarget"]["loginPageUrl"], secret["url"]]))
+            new_seeds = list(set([form_action, info["watchedTarget"]["loginPageUrl"]]))
             info["seeds"] += new_seeds
             api.execute(script=get_seeds_script(new_seeds), job=job, engine="groovy")
     return info
