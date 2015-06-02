@@ -40,8 +40,19 @@ class Validator(object):
         try:
             r = requests.get(doc["landing_page_url"])
             h = html.fromstring(r.content)
-            texts = [t for t in h.xpath("//aside[contains(@class, 'meta')]//a/text()")]
-            return len([t for t in texts if t in target["title"]]) > 0
+            if "Command and Act Papers" in target["title"]:
+                for a in h.xpath("//a"):
+                    if doc["document_url"] in urljoin(doc["landing_page_url"], a.attrib["href"]):
+                        if a.getparent().getparent().attrib["class"] == "attachment-details":
+                            div = a.getparent().getparent()
+                            refs = div.xpath("./p/span[@class='references']")
+                            for ref in refs:
+                                for span in ref.xpath("./span[starts-with(text(), 'HC') or starts-with(text(), 'Cm')]"):
+                                    return True
+                return False
+            else:
+                texts = [t for t in h.xpath("//aside[contains(@class, 'meta')]//a/text()")]
+                return len([t for t in texts if t in target["title"]]) > 0
         except:
             logger.error("www_gov_uk: %s" % sys.exc_info()[0])
             return False
