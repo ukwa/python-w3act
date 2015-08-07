@@ -27,9 +27,6 @@ wct_uids = 0
 ends_with_uk = 0
 non_ends_with_uk = 0
 ends_with_london = 0
-ends_with_scot = 0
-ends_with_cymru = 0
-ends_with_wales = 0
 field_uk_domain = 0
 field_uk_geoip = 0
 field_uk_postal_address = 0
@@ -78,7 +75,7 @@ for target in targets:
     instances = w.list( "/data/wayback/cdx-index/%s/" % target["pathSuffix"] )["FileStatuses"]["FileStatus"]
     for instance in instances:
         mod = datetime.fromtimestamp(instance["modificationTime"]/1000)
-        if mod > (datetime.now() - relativedelta(months=-1)):
+        if mod < (datetime.now() - relativedelta(months=-1)):
             new_instances += 1
 
 new_sips = 0

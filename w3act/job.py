@@ -12,10 +12,9 @@ import logging
 import heritrix
 import requests
 from lxml import etree
-from w3act.lib import ACT
+from w3act import settings
 from urlparse import urlparse
-from w3act.util import unique_list
-from w3act import settings, credentials
+from w3act.lib import ACT, unique_list
 from xml.etree.ElementTree import ParseError
 
 requests.packages.urllib3.disable_warnings()
@@ -51,12 +50,10 @@ def get_surt_association_script(surt, sheet):
 
 def get_depth_scripts(seeds, depth):
     """Creates a list of beanshell commands for seed/depth."""
-    if depth is None or depth.lower() not in depth_sheets.keys():
+    if depth not in depth_sheets.keys():
         return []
     sheet = depth_sheets[depth.lower()]
-    surt = to_surt(seed)
-    script = [get_surt_association_script(surt, sheet) for seed in seeds]
-    logger.info("Setting depth for %s to %s" % (surt, sheet))
+    script = [get_surt_association_script(to_surt(seed), sheet) for seed in seeds]
     return script
 
 
@@ -105,8 +102,7 @@ class W3actJob(object):
         else:
             return url_field
 
-    def __init__(self, w3act_targets, name=None, seeds=None, directory=None, heritrix=None, setup=True, use_credentials=False):
-        self.use_credentials = use_credentials
+    def __init__(self, w3act_targets, name=None, seeds=None, directory=None, heritrix=None, setup=True):
         if name is None:
             self.name = self.get_name(w3act_targets[0][settings.W3ACT_JOB_FIELD])
         else:
@@ -177,7 +173,7 @@ class W3actJob(object):
 
         # Write seeds to disk:
         with open("%s/seeds.txt" % self.job_dir, "wb") as o:
-            o.write("\n".join(self.seeds).encode("utf-8"))
+            o.write("\n".join(self.seeds))
 
         # Write profile to disk:
         self.create_profile()
@@ -226,14 +222,6 @@ class W3actJob(object):
         self.write_act_info()
         logger.info("Running scripts for %s" % self.name)
         self.run_job_script()
-        #TODO: The below line is a kludge to avoid an issue in the AsynchronousMQExtractor...
-        self.heritrix.execute(engine="groovy", script="appCtx.getBean(\"extractorMq\").setupChannel();", job=self.name)
-        if self.use_credentials:
-            for i, target in enumerate(self.info):
-                if "secretId" in target["watchedTarget"].keys() and target["watchedTarget"]["secretId"]:
-                    logger.info("Getting credentials for %s..." % target["title"])
-                    new_info = credentials.handle_credentials(target, self.name, self.heritrix)
-                    self.info[i] = new_info
         logger.info("Unpausing %s" % self.name)
         self.heritrix.unpause(self.name)
         self.waitfor("RUNNING")

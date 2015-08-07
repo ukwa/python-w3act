@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name="python-w3act",
-    version="0.0.2",
+    version="0.2.0",
     author="Roger G. Coram",
     author_email="roger.coram@bl.uk",
     packages=[
@@ -17,7 +17,6 @@ setup(
         "requests",
         "python-dateutil",
         "lxml",
-        "slacker",
     ],
     data_files=[
         ("/etc/init.d", ["bin/w3actd"]),
