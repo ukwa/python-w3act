@@ -12,8 +12,8 @@ QA_QUEUE_KEY="qa"
 
 W3ACT_BASE="https://www.webarchive.org.uk/act-ddhapt"
 W3ACT_LOGIN="%s/login" % W3ACT_BASE
-W3ACT_EMAIL="roger.coram@bl.uk"
-W3ACT_PASSWORD="g07*$ECAVDU8QoU"
+W3ACT_EMAIL=None
+W3ACT_PASSWORD=None
 W3ACT_EXPORT_BASE="%s/targets/export" % W3ACT_BASE
 W3ACT_LD_EXPORT="%s/ld" % W3ACT_EXPORT_BASE
 W3ACT_JOB_FIELD="url"
