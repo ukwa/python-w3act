@@ -1,28 +1,26 @@
-from distutils.core import setup
+import subprocess
+from setuptools import setup, find_packages
+
+with open('requirements.txt') as f:
+    requirements = f.read().splitlines()
+
+def get_version():
+    try:
+        return subprocess.check_output(['git', 'describe', '--tags', '--always']).strip().decode("utf-8")
+    except:
+        return "?.?.?"
 
 setup(
-    name="python-w3act",
-    version="0.0.2",
-    author="Roger G. Coram",
-    author_email="roger.coram@bl.uk",
-    packages=[
-        "w3act",
-        "w3act.watched",
-    ],
-    license="LICENSE.txt",
-    description="Heritrix/w3act job launcher.",
-    long_description=open("README.md").read(),
-    install_requires=[
-        "python-heritrix",
-        "requests",
-        "python-dateutil",
-        "lxml",
-        "slacker",
-    ],
-    data_files=[
-        ("/etc/init.d", ["bin/w3actd"]),
-        ("/usr/local/bin", ["w3actdaemon.py"]),
-        ("/usr/local/bin", ["w3start.py"]),
-        ("/usr/local/bin", ["w3add.py"]),
-    ]
+    name='python-w3act',
+    version=get_version(),
+    packages=find_packages(),
+    install_requires=requirements,
+    include_package_data=True,
+    license='Apache 2.0',
+    long_description=open('README.md').read(),
+    entry_points={
+        'console_scripts': [
+            'w3act=w3act.cli:main'
+        ]
+    }
 )
