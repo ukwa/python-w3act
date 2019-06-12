@@ -4,9 +4,40 @@
 # Utils for managing CSV data from W3ACT
 
 import argparse
+import psycopg2
+import shutil
 import json
 import csv
 import os
+
+
+def get_csv(csv_dir='../w3act-db-csv/'):
+    params = {
+        'password': os.environ.get("W3ACT_PSQL_PASSWORD"),
+        'database': os.environ.get("W3ACT_PSQL_DATABASE", "w3act"),
+        'user': os.environ.get("W3ACT_PSQL_USER", "w3act"),
+        'host': os.environ.get("W3ACT_PSQL_HOST", "192.168.45.60"),
+        'port': os.environ.get("W3ACT_PSQL_PORT", 5434)
+    }
+    conn = psycopg2.connect(**params)
+    cur = conn.cursor()
+
+    csv_dir = os.path.abspath(csv_dir)
+
+    cur.execute("""SELECT table_name FROM information_schema.tables
+           WHERE table_schema = 'public'""")
+    for table in cur.fetchall():
+        print("Downloading table %s" % table)
+        csv_file = os.path.join(csv_dir,'%s.csv' % table)
+        with open(csv_file, 'wb') as f:
+            cur.copy_expert("COPY %s TO STDOUT WITH CSV HEADER" % table, f)
+
+    cur.close()
+    conn.close()
+
+    # and bundle:
+    parent_dir = os.path.abspath(os.path.join(csv_dir, os.pardir))
+    shutil.make_archive(csv_dir, 'zip', parent_dir, os.path.basename(csv_dir))
 
 
 def load_csv(csv_dir="./test/w3act-csv"):
@@ -59,7 +90,8 @@ def load_csv(csv_dir="./test/w3act-csv"):
 
 def main():
     parser = argparse.ArgumentParser('Manipulate W3ACT CSV')
-    load_csv()
+    get_csv()
+    #load_csv()
 
 
 if __name__ == "__main__":

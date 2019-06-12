@@ -37,3 +37,8 @@ nosetests.xml
 .pydevproject
 
 */credentials.cfg
+
+venv*
+.idea/*
+w3act-db-csv.zip
+w3act-db-csv/*
