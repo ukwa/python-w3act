@@ -60,8 +60,9 @@ def main():
     act = w3act(args.w3act_url,args.w3act_user,args.w3act_pw)
 
     if args.action == "list-targets":
-        json = act.get_json("api/targets")
-        print(json)
+        json = act.get_json("targets/export/ld/nevercrawl")
+        for j in json:
+            print(j)
     elif args.action == 'add-target':
         r = act.post_target(subargs[0], subargs[1])
         print(r.status_code)
@@ -95,6 +96,7 @@ def main():
         r = act.post_document(doc)
         print(r.status_code)
         print(r.text)
+
 
 if __name__ == "__main__":
     main()
