@@ -30,14 +30,7 @@ logger = logging.getLogger( __name__ )
 logger.setLevel( logging.INFO )
 
 
-def get_csv(csv_dir='../w3act-db-csv/'):
-    params = {
-        'password': os.environ.get("W3ACT_PSQL_PASSWORD"),
-        'database': os.environ.get("W3ACT_PSQL_DATABASE", "w3act"),
-        'user': os.environ.get("W3ACT_PSQL_USER", "w3act"),
-        'host': os.environ.get("W3ACT_PSQL_HOST", "192.168.45.60"),
-        'port': os.environ.get("W3ACT_PSQL_PORT", 5434)
-    }
+def get_csv(csv_dir, params):
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
 
@@ -54,7 +47,9 @@ def get_csv(csv_dir='../w3act-db-csv/'):
     cur.close()
     conn.close()
 
-    # and bundle:
+
+def csv_to_zip(csv_dir):
+    # Bundle as a ZIP:
     parent_dir = os.path.abspath(os.path.join(csv_dir, os.pardir))
     shutil.make_archive(csv_dir, 'zip', parent_dir, os.path.basename(csv_dir))
 
@@ -242,9 +237,9 @@ def main():
 
     # Which terms, e.g. NPLD, by-permission, or both, or no terms that permit crawling:
     parser.add_argument('-t', '--terms', dest='terms', type=str, default='npld',
-                        choices=[ 'npld', 'bypm', 'both', 'no-terms'],
+                        choices=[ 'npld', 'bypm', 'no-terms', 'all'],
                         help="Filter by the terms under which we may crawl. " 
-                             "NPLD or by-permission, or both, or no terms at all. [default: %(default)s]")
+                             "NPLD or by-permission, no terms at all, or all records (no filtering). [default: %(default)s]")
 
     # Whether to include items with UK TLDs in the results. Useful for separating seeds from scope for domain crawls.
     parser.add_argument('--omit-uk-tlds', dest='omit_uk_tlds', action='store_true', default=False,
@@ -273,14 +268,27 @@ def main():
     # Create
     urllist_parser = subparsers.add_parser("list-urls", help="List URLs from Targets in the W3ACT CSV data.")
 
-
     # Parse up:
     args = parser.parse_args()
 
     if args.action == "get-csv":
-        get_csv(csv_dir=args.csv_dir)
+        # Setup connection params
+        params = {
+            'password': os.environ.get("W3ACT_PSQL_PASSWORD", None),
+            'database': args.db_name,
+            'user': args.db_user,
+            'host': args.db_host,
+            'port': args.db_port
+        }
+        # make command-line pw override any env var:
+        if args.db_pw:
+            params['password'] = args.db_pw
+        # And pull down the data tables as CSV:
+        get_csv(csv_dir=args.csv_dir, params=params)
     else:
-        # Load in:
+        # FIXME Fail if CSV folder is empty/non-existant
+
+        # Load in for processing:
         targets = load_csv(csv_dir=args.csv_dir)
         targets = filtered_targets(targets,
                                    frequency=args.frequency,
@@ -289,13 +297,16 @@ def main():
                                    include_hidden=args.include_hidden,
                                    include_expired=args.include_expired
                                    )
+        # Actions to perform:
         if args.action  == "list-urls":
             for target in targets:
                 # So print!
                 for url in target.get('urls', []):
                     print("%s" % url )
         elif args.action == "csv-to-json":
-            write_json("w3act-db.jsonl", targets)
+            write_json("%s.jsonl" % args.csv_dir, targets)
+        elif args.action == "csv-to-zip":
+            csv_to_zip(args.csv_dir)
         else:
             print("No action specified! Use -h flag to see available actions.")
 
