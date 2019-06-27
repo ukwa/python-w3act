@@ -20,7 +20,7 @@ setup(
     long_description=open('README.md').read(),
     entry_points={
         'console_scripts': [
-            'w3act=w3act.cli:main'
+            'w3act=w3act.cli:main',
             'w3act-csv=w3act.cli-csv:main'
         ]
     }
