@@ -130,6 +130,32 @@ def load_csv(csv_dir="./test/w3act-csv"):
             licenses.append(tax[licid]['name'])
             targets[tid]['licenses'] = licenses
 
+    # Grab the authors/curators:
+    logger.info("Loading creators...")
+    authors = {}
+    with open(os.path.join(csv_dir,'creator.csv'), 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            if row['id'] != 'id':
+                # Pop some unnecessary fields:
+                for f in ['password', 'url', 'edit_url', 'affiliation']:
+                    row.pop(f)
+                # Store
+                authors[int(row['id'])] = row
+
+    # Load the organisations:
+    logger.info("Loading organisations...")
+    orgs = {}
+    with open(os.path.join(csv_dir,'organisation.csv'), 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            if row['id'] != 'id':
+                # Pop some unnecessary fields:
+                for f in ['author_id', 'url', 'edit_url', 'affiliation']:
+                    row.pop(f)
+                # Store
+                orgs[int(row['id'])] = row
+
     # JOIN to get
     #
     # CrawlPermissions crawl_permission table
@@ -138,8 +164,6 @@ def load_csv(csv_dir="./test/w3act-csv"):
     # Tags tag_target Taxonomy table
     # Flags flag_target Taxonomy table
     # LookupEntries (unused?) from lookup_entry table
-    # FIXME AuthorUser author_id from creator table
-    # FIXME Organisation organsation_id from organisation table
     #
     # DocumentOwner document_owner_id from creator table
     # WatchedTarget from watched_target table
@@ -165,7 +189,21 @@ def load_csv(csv_dir="./test/w3act-csv"):
         targets[tid]['isNPLD'] = check_npld_status(targets[tid])
         # OA status:
         targets[tid]['isOA'] = check_oa_status(targets[tid])
-        # FIXME inherit both:
+        # FIXME Both should be inherited from higher-level Targets:
+
+        # Replace author_id field with a curator entry:
+        auid = targets[tid].pop('author_id')
+        targets[tid]['curator'] = {'id': auid }
+        if auid:
+            auid = int(auid)
+            targets[tid]['curator'] = authors[auid]
+
+        # Replace organisation_id field with a curating_organisation entry:
+        orid = targets[tid].pop('organisation_id')
+        targets[tid]['curating_organisation'] = {'id': orid}
+        if orid:
+            orid = int(orid)
+            targets[tid]['curating_organisation'] = orgs[orid]
 
     return targets
 
@@ -201,12 +239,11 @@ def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True,
 
 def write_json(filename, targets):
     with open(filename,"w") as f:
-        for tid in targets:
-            t = targets[tid]
+        for t in targets:
             #if not t['hidden'] and t['isNPLD'] and t['crawl_frequency'] == 'NEVERCRAWL':
             #if t['crawl_frequency'] == 'NEVERCRAWL':
             # Emit
-            f.write(json.dumps(targets[tid]))
+            f.write(json.dumps(t))
             f.write("\n")
 
 
@@ -265,6 +302,9 @@ def main():
     # Get CSV
     get_parser = subparsers.add_parser("get-csv", help="Download data from W3ACT PostgreSQL and store as CSV.")
 
+    # Turn to JSON Lines
+    to_jsonl_parser = subparsers.add_parser("csv-to-jsonl", help="Load CSV and store as JSON Lines.")
+
     # Create
     urllist_parser = subparsers.add_parser("list-urls", help="List URLs from Targets in the W3ACT CSV data.")
 
@@ -286,7 +326,7 @@ def main():
         # And pull down the data tables as CSV:
         get_csv(csv_dir=args.csv_dir, params=params)
     else:
-        # FIXME Fail if CSV folder is empty/non-existant
+        # FIXME Fail if CSV folder is empty/non-existent
 
         # Load in for processing:
         targets = load_csv(csv_dir=args.csv_dir)
@@ -303,7 +343,7 @@ def main():
                 # So print!
                 for url in target.get('urls', []):
                     print("%s" % url )
-        elif args.action == "csv-to-json":
+        elif args.action == "csv-to-jsonl":
             write_json("%s.jsonl" % args.csv_dir, targets)
         elif args.action == "csv-to-zip":
             csv_to_zip(args.csv_dir)
