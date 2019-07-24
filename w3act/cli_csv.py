@@ -76,8 +76,37 @@ def check_oa_status(target):
     return False
 
 
+def attach_child_collections(col, bypid):
+    children = col.get('children', [])
+    cid = int(col['id'])
+    for child in bypid.get(cid, []):
+        attach_child_collections(child, bypid)
+        children.append(child)
+    col['children'] = children
+
+
+def extract_collections(tax):
+    topc = []
+    bypid = {}
+    for tid in tax:
+        if tax[tid]['ttype'] == 'collections':
+            if not tax[tid]['parent_id']:
+                topc.append(tax[tid])
+            else:
+                pid = int(tax[tid]['parent_id'])
+                children = bypid.get(pid,[])
+                children.append(tax[tid])
+                bypid[pid] = children
+
+    for col in topc:
+        attach_child_collections(col, bypid)
+
+    return topc
+
+
+
 def load_csv(csv_dir="./test/w3act-csv"):
-    logger.info("Loading targets...")
+    logger.info("Loading W3ACT data...")
     targets = {}
     with open(os.path.join(csv_dir,'target.csv'), 'r') as csv_file:
         reader = csv.DictReader(csv_file)
@@ -117,6 +146,20 @@ def load_csv(csv_dir="./test/w3act-csv"):
         for row in reader:
             if row['id'] != 'id':
                 tax[int(row['id'])] = row
+
+    # Grab the taxonomies
+    logger.info("Loading collection_target associations...")
+    tid_cid = {}
+    with open(os.path.join(csv_dir,'collection_target.csv'), 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            if row['target_id'] != 'target_id':
+                tid = int(row['target_id'])
+                cid = int(row['collection_id'])
+                cids = tid_cid.get(tid, set())
+                cids.add(cid)
+                tid_cid[tid] = cids
+
 
     # Licenses license_target table to Taxonomy table
     logger.info("Loading licenses...")
@@ -160,7 +203,6 @@ def load_csv(csv_dir="./test/w3act-csv"):
     #
     # CrawlPermissions crawl_permission table
     # Subjects subject_target Taxonomy table
-    # FIXME Collections collection_target Taxonomy table
     # Tags tag_target Taxonomy table
     # Flags flag_target Taxonomy table
     # LookupEntries (unused?) from lookup_entry table
@@ -172,7 +214,13 @@ def load_csv(csv_dir="./test/w3act-csv"):
     #
     # To be OA need to must have (or inherit) a license
 
+    # Extract the Collections heirarchy:
+    collections = extract_collections(tax)
+
+    # Post-processs the targets
     for tid in targets:
+        # Collections:
+        targets[tid]['collection_ids'] = list(tid_cid.get(tid,[]))
         # QA Issues qaissue_id  Taxonomy
         qaid = targets[tid]['qaissue_id']
         targets[tid]['qaissue_score'] = 0
@@ -191,21 +239,14 @@ def load_csv(csv_dir="./test/w3act-csv"):
         targets[tid]['isOA'] = check_oa_status(targets[tid])
         # FIXME Both should be inherited from higher-level Targets:
 
-        # Replace author_id field with a curator entry:
-        auid = targets[tid].pop('author_id')
-        targets[tid]['curator'] = {'id': auid }
-        if auid:
-            auid = int(auid)
-            targets[tid]['curator'] = authors[auid]
+    all = {
+        'targets': targets,
+        'curators' : authors,
+        'organisations': orgs,
+        'collections': collections
+    }
 
-        # Replace organisation_id field with a curating_organisation entry:
-        orid = targets[tid].pop('organisation_id')
-        targets[tid]['curating_organisation'] = {'id': orid}
-        if orid:
-            orid = int(orid)
-            targets[tid]['curating_organisation'] = orgs[orid]
-
-    return targets
+    return all
 
 
 def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True, omit_uk_tlds=False, include_expired=True):
@@ -237,14 +278,9 @@ def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True,
         return filtered
 
 
-def write_json(filename, targets):
+def write_json(filename, all):
     with open(filename,"w") as f:
-        for t in targets:
-            #if not t['hidden'] and t['isNPLD'] and t['crawl_frequency'] == 'NEVERCRAWL':
-            #if t['crawl_frequency'] == 'NEVERCRAWL':
-            # Emit
-            f.write(json.dumps(t))
-            f.write("\n")
+        json.dump(all, f, indent=2)
 
 
 def main():
@@ -302,8 +338,8 @@ def main():
     # Get CSV
     get_parser = subparsers.add_parser("get-csv", help="Download data from W3ACT PostgreSQL and store as CSV.")
 
-    # Turn to JSON Lines
-    to_jsonl_parser = subparsers.add_parser("csv-to-jsonl", help="Load CSV and store as JSON Lines.")
+    # Turn to JSON
+    to_json_parser = subparsers.add_parser("csv-to-json", help="Load CSV and store as JSON.")
 
     # Create
     urllist_parser = subparsers.add_parser("list-urls", help="List URLs from Targets in the W3ACT CSV data.")
@@ -329,8 +365,8 @@ def main():
         # FIXME Fail if CSV folder is empty/non-existent
 
         # Load in for processing:
-        targets = load_csv(csv_dir=args.csv_dir)
-        targets = filtered_targets(targets,
+        all = load_csv(csv_dir=args.csv_dir)
+        targets = filtered_targets(all['targets'],
                                    frequency=args.frequency,
                                    terms=args.terms,
                                    omit_uk_tlds=args.omit_uk_tlds,
@@ -343,8 +379,8 @@ def main():
                 # So print!
                 for url in target.get('urls', []):
                     print("%s" % url )
-        elif args.action == "csv-to-jsonl":
-            write_json("%s.jsonl" % args.csv_dir, targets)
+        elif args.action == "csv-to-json":
+            write_json("%s.json" % args.csv_dir, all)
         elif args.action == "csv-to-zip":
             csv_to_zip(args.csv_dir)
         else:
