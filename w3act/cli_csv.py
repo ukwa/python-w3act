@@ -79,7 +79,7 @@ def check_oa_status(target):
 
 def attach_child_collections(col, bypid):
     children = col.get('children', [])
-    cid = int(col['id'])
+    cid = col['id']
     for child in bypid.get(cid, []):
         attach_child_collections(child, bypid)
         children.append(child)
@@ -87,19 +87,20 @@ def attach_child_collections(col, bypid):
 
 
 def extract_collections(tax):
-    topc = []
+    topc = {}
     bypid = {}
     for tid in tax:
         if tax[tid]['ttype'] == 'collections':
             if not tax[tid]['parent_id']:
-                topc.append(tax[tid])
+                topc[tid] = tax[tid]
             else:
                 pid = int(tax[tid]['parent_id'])
                 children = bypid.get(pid,[])
                 children.append(tax[tid])
                 bypid[pid] = children
 
-    for col in topc:
+    for tid in topc:
+        col = topc[tid]
         attach_child_collections(col, bypid)
 
     return topc
@@ -122,8 +123,10 @@ def load_csv(csv_dir="./test/w3act-csv"):
                         row[tf] = True
                     else:
                         row[tf] = False
+                # turn id into int
+                row['id'] = int(row['id'])
                 # And store
-                targets[int(row['id'])] = row
+                targets[row['id']] = row
 
     # JOIN to get URLs:
     logger.info("Loading URLs...")
@@ -146,7 +149,9 @@ def load_csv(csv_dir="./test/w3act-csv"):
         reader = csv.DictReader(csv_file)
         for row in reader:
             if row['id'] != 'id':
-                tax[int(row['id'])] = row
+                # turn id into int
+                row['id'] = int(row['id'])
+                tax[row['id']] = row
 
     # Grab the taxonomies
     logger.info("Loading collection_target associations...")
@@ -184,8 +189,10 @@ def load_csv(csv_dir="./test/w3act-csv"):
                 # Pop some unnecessary fields:
                 for f in ['password', 'url', 'edit_url', 'affiliation']:
                     row.pop(f)
+                # turn id into int
+                row['id'] = int(row['id'])
                 # Store
-                authors[int(row['id'])] = row
+                authors[row['id']] = row
 
     # Load the organisations:
     logger.info("Loading organisations...")
@@ -197,8 +204,10 @@ def load_csv(csv_dir="./test/w3act-csv"):
                 # Pop some unnecessary fields:
                 for f in ['author_id', 'url', 'edit_url', 'affiliation']:
                     row.pop(f)
+                # turn id into int
+                row['id'] = int(row['id'])
                 # Store
-                orgs[int(row['id'])] = row
+                orgs[row['id']] = row
 
     # JOIN to get
     #
@@ -261,10 +270,10 @@ def load_csv(csv_dir="./test/w3act-csv"):
                 targets[tid]['inheritsNPLD'] = True
 
     all = {
-        'targets': targets,
-        'curators' : authors,
-        'organisations': orgs,
-        'collections': collections
+        'targets': list(targets.values()),
+        'curators' : list(authors.values()),
+        'organisations': list(orgs.values()),
+        'collections': list(collections.values())
     }
 
     return all
@@ -273,28 +282,28 @@ def load_csv(csv_dir="./test/w3act-csv"):
 def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True, omit_uk_tlds=False, include_expired=True):
         # aggregate
         filtered = []
-        for tid in targets:
+        for t in targets:
             # Only emit un-hidden Targets here:
-            if not include_hidden and targets[tid]['hidden']:
+            if not include_hidden and t['hidden']:
                 continue
             # Filter out other frequencies:
-            if frequency and targets[tid]['crawl_frequency'].lower() != frequency.lower():
+            if frequency and t['crawl_frequency'].lower() != frequency.lower():
                 continue
             # Filter down by crawl terms:
-            if terms == 'npld' and not targets[tid].get('isNPLD', None):
+            if terms == 'npld' and not t.get('isNPLD', None):
                 continue
             # Don't bother outputting items that are trivially in scope:
-            if omit_uk_tlds and targets[tid]['is_top_level_domain']:
+            if omit_uk_tlds and t['is_top_level_domain']:
                 continue
             # Don't bother outputing expired items:
-            if not include_expired and targets[tid]['crawl_end_date']:
-                end_date = dateutil.parser.parse(targets[tid]['crawl_end_date'])
+            if not include_expired and t['crawl_end_date']:
+                end_date = dateutil.parser.parse(t['crawl_end_date'])
                 if end_date < datetime.datetime.now():
                     date_delta = end_date - datetime.datetime.now()
-                    logger.info("Skipping target %i '%s' with crawl end date in the past (%s)" %(tid, targets[tid]['title'], date_delta))
+                    logger.info("Skipping target %i '%s' with crawl end date in the past (%s)" %(t['id'], t['title'], date_delta))
                     continue
             # Othewise, emit:
-            filtered.append(targets[tid])
+            filtered.append(t)
         # And return
         return filtered
 
