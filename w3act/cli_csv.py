@@ -51,7 +51,7 @@ def get_csv(csv_dir, params):
 def csv_to_zip(csv_dir):
     # Bundle as a ZIP:
     parent_dir = os.path.abspath(os.path.join(csv_dir, os.pardir))
-    shutil.make_archive(csv_dir, 'zip', parent_dir, os.path.basename(csv_dir))
+    return shutil.make_archive(csv_dir, 'zip', parent_dir, os.path.basename(csv_dir))
 
 
 def check_npld_status(target):
