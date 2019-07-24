@@ -156,16 +156,21 @@ def load_csv(csv_dir="./test/w3act-csv"):
     # Grab the taxonomies
     logger.info("Loading collection_target associations...")
     tid_cid = {}
+    cid_tid = {}
     with open(os.path.join(csv_dir,'collection_target.csv'), 'r') as csv_file:
         reader = csv.DictReader(csv_file)
         for row in reader:
             if row['target_id'] != 'target_id':
                 tid = int(row['target_id'])
                 cid = int(row['collection_id'])
+                # Collections by Target
                 cids = tid_cid.get(tid, set())
                 cids.add(cid)
                 tid_cid[tid] = cids
-
+                # Targets by Collection
+                tids = tax[cid].get('target_ids', [])
+                tids.append(tid)
+                tax[cid]['target_ids'] = tids
 
     # Licenses license_target table to Taxonomy table
     logger.info("Loading licenses...")
@@ -270,10 +275,10 @@ def load_csv(csv_dir="./test/w3act-csv"):
                 targets[tid]['inheritsNPLD'] = True
 
     all = {
-        'targets': list(targets.values()),
-        'curators' : list(authors.values()),
-        'organisations': list(orgs.values()),
-        'collections': list(collections.values())
+        'targets': targets,
+        'curators' : authors,
+        'organisations': orgs,
+        'collections': collections
     }
 
     return all
@@ -282,7 +287,7 @@ def load_csv(csv_dir="./test/w3act-csv"):
 def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True, omit_uk_tlds=False, include_expired=True):
         # aggregate
         filtered = []
-        for t in targets:
+        for t in targets.values():
             # Only emit un-hidden Targets here:
             if not include_hidden and t['hidden']:
                 continue
