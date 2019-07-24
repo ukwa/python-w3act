@@ -8,6 +8,7 @@ import datetime
 import argparse
 import psycopg2
 import logging
+from urllib.parse import urlparse
 import shutil
 import json
 import csv
@@ -218,6 +219,8 @@ def load_csv(csv_dir="./test/w3act-csv"):
     collections = extract_collections(tax)
 
     # Post-processs the targets
+    oa_urls = set()
+    npld_urls = set()
     for tid in targets:
         # Collections:
         targets[tid]['collection_ids'] = list(tid_cid.get(tid,[]))
@@ -235,9 +238,27 @@ def load_csv(csv_dir="./test/w3act-csv"):
                 targets[tid]['qaissue_score'] = 3 # No QA Issues
         # NPLD status:
         targets[tid]['isNPLD'] = check_npld_status(targets[tid])
+        if targets[tid]['isNPLD']:
+            for url in targets[tid].get('urls',[]):
+                npld_urls.add(url)
         # OA status:
         targets[tid]['isOA'] = check_oa_status(targets[tid])
-        # FIXME Both should be inherited from higher-level Targets:
+        if targets[tid]['isOA']:
+            for url in targets[tid].get('urls',[]):
+                oa_urls.add(url)
+
+    # Second pass to add inherited statuses:
+    # FIXME Both should be inherited from all higher-level Targets. This version only inherits from hosts.
+    for tid in targets:
+        for url in targets[tid].get('urls',[]):
+            parsed_uri = urlparse(url)
+            base = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+            if base in oa_urls and not targets[tid]['isOA']:
+                targets[tid]['isOA'] = True
+                targets[tid]['inheritsOA'] = True
+            if base in npld_urls and not targets[tid]['isNPLD']:
+                targets[tid]['isNPLD'] = True
+                targets[tid]['inheritsNPLD'] = True
 
     all = {
         'targets': targets,
