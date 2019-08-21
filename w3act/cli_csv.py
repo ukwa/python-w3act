@@ -13,6 +13,7 @@ import shutil
 import json
 import csv
 import os
+from w3act.site import GenerateSitePages
 
 # Set up a logging handler:
 handler = logging.StreamHandler()
@@ -149,6 +150,13 @@ def load_csv(csv_dir="./test/w3act-csv"):
         reader = csv.DictReader(csv_file)
         for row in reader:
             if row['id'] != 'id':
+                # Turn booleans into proper booleans:
+                tfs = ["publish"]
+                for tf in tfs:
+                    if row[tf] == 't':
+                        row[tf] = True
+                    else:
+                        row[tf] = False
                 # turn id into int
                 row['id'] = int(row['id'])
                 tax[row['id']] = row
@@ -379,6 +387,9 @@ def main():
     # Create
     urllist_parser = subparsers.add_parser("list-urls", help="List URLs from Targets in the W3ACT CSV data.")
 
+    # Generate static site version
+    sitegen_parser = subparsers.add_parser("gen-site", help="Generate Hugo static site source files from W3ACT CSV data.")
+
     # Parse up:
     args = parser.parse_args()
 
@@ -401,15 +412,17 @@ def main():
 
         # Load in for processing:
         all = load_csv(csv_dir=args.csv_dir)
-        targets = filtered_targets(all['targets'],
-                                   frequency=args.frequency,
-                                   terms=args.terms,
-                                   omit_uk_tlds=args.omit_uk_tlds,
-                                   include_hidden=args.include_hidden,
-                                   include_expired=args.include_expired
-                                   )
+
         # Actions to perform:
         if args.action  == "list-urls":
+            targets = filtered_targets(all['targets'],
+                                       frequency=args.frequency,
+                                       terms=args.terms,
+                                       omit_uk_tlds=args.omit_uk_tlds,
+                                       include_hidden=args.include_hidden,
+                                       include_expired=args.include_expired
+                                       )
+
             for target in targets:
                 # So print!
                 for url in target.get('urls', []):
@@ -418,6 +431,10 @@ def main():
             write_json("%s.json" % args.csv_dir, all)
         elif args.action == "csv-to-zip":
             csv_to_zip(args.csv_dir)
+        elif args.action == "gen-site":
+            sg = GenerateSitePages(all, "/Users/andy/Documents/workspace/ukwa-site")
+            sg.generate()
+
         else:
             print("No action specified! Use -h flag to see available actions.")
 

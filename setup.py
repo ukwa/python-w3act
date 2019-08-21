@@ -15,7 +15,10 @@ setup(
     version=get_version(),
     packages=find_packages(),
     install_requires=requirements,
-    include_package_data=True,
+    package_data={
+        # If any package contains *.txt or *.md files, include them:
+        '': ['*.txt', '*.md'],
+    },
     license='Apache 2.0',
     long_description=open('README.md').read(),
     entry_points={
