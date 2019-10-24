@@ -180,6 +180,16 @@ def load_csv(csv_dir="./test/w3act-csv"):
                 tids.append(tid)
                 tax[cid]['target_ids'] = tids
 
+    # Watched Target setup
+    logger.info("Loading watched_target associations...")
+    with open(os.path.join(csv_dir,'watched_target.csv'), 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            if row['id'] != 'id':
+                tid = int(row['id_target'])
+                targets[tid]['watched'] = True
+                targets[tid]['document_url_scheme'] = row['document_url_scheme']
+
     # Licenses license_target table to Taxonomy table
     logger.info("Loading licenses...")
     lic_by_tid = {}
@@ -299,9 +309,15 @@ def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True,
             # Only emit un-hidden Targets here:
             if not include_hidden and t['hidden']:
                 continue
-            # Filter out other frequencies:
-            if frequency and t['crawl_frequency'].lower() != frequency.lower():
-                continue
+            # Filter out based on frequencies:
+            if frequency:
+                # If 'all', filter out NEVERCRAWL (whereas 'None' doesn't filter at all).
+                if frequency == 'all':
+                    if t['crawl_frequency'].lower() == 'nevercrawl':
+                        continue
+                # Otherwise, only emit matching frequency:
+                elif t['crawl_frequency'].lower() != frequency.lower():
+                    continue
             # Filter down by crawl terms:
             if terms == 'npld' and not t.get('isNPLD', None):
                 continue
@@ -319,6 +335,30 @@ def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True,
             filtered.append(t)
         # And return
         return filtered
+
+
+def to_crawl_feed_format(target):
+    cf = {
+        "id": target['id'],
+        "title": target['title'],
+        "seeds": target.get('urls', []),
+        "depth": target['depth'],
+        "scope": target['scope'],
+        "ignoreRobotsTxt": target['ignore_robots_txt'],
+        "schedules": [
+            {
+                "startDate": target['crawl_start_date'],
+                "endDate": target['crawl_end_date'],
+                "frequency": target['crawl_frequency']
+            }
+        ],
+        "watched": target.get('watched', False),
+        "documentUrlScheme": target.get('document_url_scheme', None),
+        "loginPageUrl": target['login_page_url'],
+        "logoutUrl": target['logout_url'],
+        "secretId": target['secret_id']
+    }
+    return cf
 
 
 def write_json(filename, all):
@@ -346,10 +386,10 @@ def main():
     parser.add_argument('-d', '--csv-dir', dest='csv_dir', help="Folder to cache CSV data in.", default="w3act-db-csv")
 
     parser.add_argument('-f', '--frequency', dest="frequency", type=str,
-                        default=None, choices=[ None, 'nevercrawl', 'daily', 'weekly',
+                        default='all', choices=[ None, 'nevercrawl', 'daily', 'weekly',
                                                 'monthly', 'quarterly', 'sixmonthly',
-                                                'annual', 'domaincrawl'],
-                        help="Filter targets by crawl frequency [default: %(default)s]")
+                                                'annual', 'domaincrawl', 'all'],
+                        help="Filter targets by crawl frequency (n.b. 'all' means all-but-nevercrawl) [default: %(default)s]")
 
     # Which terms, e.g. NPLD, by-permission, or both, or no terms that permit crawling:
     parser.add_argument('-t', '--terms', dest='terms', type=str, default='npld',
@@ -386,6 +426,9 @@ def main():
 
     # Create
     urllist_parser = subparsers.add_parser("list-urls", help="List URLs from Targets in the W3ACT CSV data.")
+
+    # Generate static site version
+    crawlfeed_parser = subparsers.add_parser("crawl-feed", help="Generate crawl-feed format files from W3ACT CSV data.")
 
     # Generate static site version
     sitegen_parser = subparsers.add_parser("gen-site", help="Generate Hugo static site source files from W3ACT CSV data.")
@@ -434,6 +477,18 @@ def main():
         elif args.action == "gen-site":
             sg = GenerateSitePages(all, "/Users/andy/Documents/workspace/ukwa-site")
             sg.generate()
+        elif args.action == "crawl-feed":
+            targets = filtered_targets(all['targets'],
+                                       frequency=args.frequency,
+                                       terms=args.terms,
+                                       omit_uk_tlds=args.omit_uk_tlds,
+                                       include_hidden=args.include_hidden,
+                                       include_expired=args.include_expired
+                                       )
+            feed = []
+            for target in targets:
+                feed.append(to_crawl_feed_format(target))
+            write_json("%s.crawl-feed.json" % args.csv_dir, feed)
 
         else:
             print("No action specified! Use -h flag to see available actions.")
