@@ -106,6 +106,24 @@ def extract_collections(tax):
 
     return topc
 
+def extract_subjects(tax):
+    topc = {}
+    bypid = {}
+    for tid in tax:
+        if tax[tid]['ttype'] == 'subject':
+            if not tax[tid]['parent_id']:
+                topc[tid] = tax[tid]
+            else:
+                pid = int(tax[tid]['parent_id'])
+                children = bypid.get(pid,[])
+                children.append(tax[tid])
+                bypid[pid] = children
+
+    for tid in topc:
+        col = topc[tid]
+        attach_child_collections(col, bypid)
+
+    return topc
 
 
 def load_csv(csv_dir="./test/w3act-csv"):
@@ -164,7 +182,6 @@ def load_csv(csv_dir="./test/w3act-csv"):
     # Grab the taxonomies
     logger.info("Loading collection_target associations...")
     tid_cid = {}
-    cid_tid = {}
     with open(os.path.join(csv_dir,'collection_target.csv'), 'r') as csv_file:
         reader = csv.DictReader(csv_file)
         for row in reader:
@@ -179,6 +196,24 @@ def load_csv(csv_dir="./test/w3act-csv"):
                 tids = tax[cid].get('target_ids', [])
                 tids.append(tid)
                 tax[cid]['target_ids'] = tids
+
+    # Grab the subjects
+    logger.info("Loading subject_target associations...")
+    tid_sid = {}
+    with open(os.path.join(csv_dir,'subject_target.csv'), 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            if row['target_id'] != 'target_id':
+                tid = int(row['target_id'])
+                sid = int(row['subject_id'])
+                # Collections by Target
+                sids = tid_sid.get(tid, set())
+                sids.add(sid)
+                tid_sid[tid] = sids
+                # Targets by Collection
+                tids = tax[sid].get('target_ids', [])
+                tids.append(tid)
+                tax[sid]['target_ids'] = tids
 
     # Watched Target setup
     logger.info("Loading watched_target associations...")
@@ -250,12 +285,17 @@ def load_csv(csv_dir="./test/w3act-csv"):
     # Extract the Collections heirarchy:
     collections = extract_collections(tax)
 
+    # And the subjects:
+    subjects = extract_subjects(tax)
+
     # Post-processs the targets
     oa_urls = set()
     npld_urls = set()
     for tid in targets:
         # Collections:
         targets[tid]['collection_ids'] = list(tid_cid.get(tid,[]))
+        # Subjects:
+        targets[tid]['subject_ids'] = list(tid_sid.get(tid,[]))
         # QA Issues qaissue_id  Taxonomy
         qaid = targets[tid]['qaissue_id']
         targets[tid]['qaissue_score'] = 0
@@ -296,7 +336,8 @@ def load_csv(csv_dir="./test/w3act-csv"):
         'targets': targets,
         'curators' : authors,
         'organisations': orgs,
-        'collections': collections
+        'collections': collections,
+        'subjects': subjects
     }
 
     return all
