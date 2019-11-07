@@ -78,20 +78,20 @@ def check_oa_status(target):
     return False
 
 
-def attach_child_collections(col, bypid):
+def attach_child_terms(col, bypid):
     children = col.get('children', [])
     cid = col['id']
     for child in bypid.get(cid, []):
-        attach_child_collections(child, bypid)
+        attach_child_terms(child, bypid)
         children.append(child)
     col['children'] = children
 
 
-def extract_collections(tax):
+def extract_taxonomy(tax, tax_name):
     topc = {}
     bypid = {}
     for tid in tax:
-        if tax[tid]['ttype'] == 'collections':
+        if tax[tid]['ttype'] == tax_name:
             if not tax[tid]['parent_id']:
                 topc[tid] = tax[tid]
             else:
@@ -102,26 +102,7 @@ def extract_collections(tax):
 
     for tid in topc:
         col = topc[tid]
-        attach_child_collections(col, bypid)
-
-    return topc
-
-def extract_subjects(tax):
-    topc = {}
-    bypid = {}
-    for tid in tax:
-        if tax[tid]['ttype'] == 'subject':
-            if not tax[tid]['parent_id']:
-                topc[tid] = tax[tid]
-            else:
-                pid = int(tax[tid]['parent_id'])
-                children = bypid.get(pid,[])
-                children.append(tax[tid])
-                bypid[pid] = children
-
-    for tid in topc:
-        col = topc[tid]
-        attach_child_collections(col, bypid)
+        attach_child_terms(col, bypid)
 
     return topc
 
@@ -225,17 +206,21 @@ def load_csv(csv_dir="./test/w3act-csv"):
                 targets[tid]['watched'] = True
                 targets[tid]['document_url_scheme'] = row['document_url_scheme']
 
-    # Licenses license_target table to Taxonomy table
+    # Licenses license_target table to Taxonomy table (yay American spelling!)
     logger.info("Loading licenses...")
-    lic_by_tid = {}
     with open(os.path.join(csv_dir,'license_target.csv'), 'r') as csv_file:
         reader = csv.DictReader(csv_file)
         for row in reader:
             tid = int(row['target_id'])
             licid = int(row['license_id'])
-            licenses = targets[tid].get('licenses', [])
-            licenses.append(tax[licid]['name'])
-            targets[tid]['licenses'] = licenses
+            # License Names:
+            tlic = targets[tid].get('licenses', [])
+            tlic.append(tax[licid]['name'])
+            targets[tid]['licenses'] = tlic
+            # Also keep IDs:
+            tlic = targets[tid].get('license_ids', [])
+            tlic.append(licid)
+            targets[tid]['license_ids'] = tlic
 
     # Grab the authors/curators:
     logger.info("Loading creators...")
@@ -283,10 +268,13 @@ def load_csv(csv_dir="./test/w3act-csv"):
     # To be OA need to must have (or inherit) a license
 
     # Extract the Collections heirarchy:
-    collections = extract_collections(tax)
+    collections = extract_taxonomy(tax,'collections')
 
     # And the subjects:
-    subjects = extract_subjects(tax)
+    subjects = extract_taxonomy(tax,'subject')
+
+    # And the licences:
+    licenses = extract_taxonomy(tax,'licenses')
 
     # Post-processs the targets
     oa_urls = set()
@@ -337,7 +325,8 @@ def load_csv(csv_dir="./test/w3act-csv"):
         'curators' : authors,
         'organisations': orgs,
         'collections': collections,
-        'subjects': subjects
+        'subjects': subjects,
+        'licenses': licenses
     }
 
     return all
