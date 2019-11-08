@@ -349,7 +349,14 @@ def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True,
                 elif t['crawl_frequency'].lower() != frequency.lower():
                     continue
             # Filter down by crawl terms:
-            if terms == 'npld' and not t.get('isNPLD', None):
+            if terms == 'npld':
+                if not t.get('isNPLD', None):
+                    continue
+            elif terms == 'oa':
+                if not t.get('isOA', None):
+                    continue
+            elif terms != None:
+                logging.error("Unrecognised terms filter %s! Only None, 'npld' and 'oa' are implemented!" % terms)
                 continue
             # Don't bother outputting items that are trivially in scope:
             if omit_uk_tlds and t['is_top_level_domain']:
