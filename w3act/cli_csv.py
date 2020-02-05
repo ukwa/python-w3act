@@ -13,6 +13,7 @@ import shutil
 import json
 import csv
 import os
+import re
 from w3act.site import GenerateSitePages
 
 # Set up a logging handler:
@@ -320,8 +321,28 @@ def load_csv(csv_dir="./test/w3act-csv"):
                 targets[tid]['isNPLD'] = True
                 targets[tid]['inheritsNPLD'] = True
 
+    # Perform some additional validation.
+    invalid_tids = set()
+    bare_twit = re.compile("https?:\/\/[\w.]*twitter\.com\/[a-zA-Z0-9_]{0,15}$")
+    for tid in targets:
+        for url in targets[tid].get('urls',[]):
+            if bare_twit.match(url):
+                logger.error("This target (%s) has a bare Twitter URL as a seed! %s" % ( tid, url))
+                targets[tid]['invalid_reason'] = "Bare Twitter URLs are not allowed."
+                invalid_tids.add(tid)
+
+    # Now drop the bad ones:
+    invalid_targets = []
+    for tid in invalid_tids:
+        logger.warning("Dropping invalid target %s" % tid )
+        target = targets[tid]
+        invalid_targets.append(target)
+        del targets[tid]
+
+    # Assemble the results into a single dict():
     all = {
         'targets': targets,
+        'invalid_targets': invalid_targets,
         'curators' : authors,
         'organisations': orgs,
         'collections': collections,
@@ -473,6 +494,10 @@ def main():
     # Parse up:
     args = parser.parse_args()
 
+    # Clean up:
+    args.csv_dir = args.csv_dir.rstrip('/')
+
+    # Handle:
     if args.action == "get-csv":
         # Setup connection params
         params = {
