@@ -323,7 +323,7 @@ def load_csv(csv_dir="./test/w3act-csv"):
 
     # Perform some additional validation.
     invalid_tids = set()
-    bare_twit = re.compile("https?:\/\/[\w.]*twitter\.com\/[a-zA-Z0-9_]{0,15}$")
+    bare_twit = re.compile("https?:\/\/[\w.]*twitter\.com\/[a-zA-Z0-9_?=]{0,15}$")
     for tid in targets:
         for url in targets[tid].get('urls',[]):
             if bare_twit.match(url):
