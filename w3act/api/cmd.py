@@ -21,7 +21,7 @@ import sys
 import logging
 import argparse
 from urllib.parse import urlparse
-from w3act.w3act import w3act
+from w3act.api.client import w3act
 
 
 # Set up a logging handler:

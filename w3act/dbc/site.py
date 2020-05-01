@@ -93,7 +93,7 @@ class GenerateSitePages():
             targets_by_id[int(target['id'])] = target
 
         # Setup template environment:
-        env = Environment(loader=PackageLoader('w3act', 'templates'))
+        env = Environment(loader=PackageLoader('w3act', 'site_templates'))
 
         # Targets
         # FIXME this should build up an 'id' to 'page-source-path' mapping, and link to collections:

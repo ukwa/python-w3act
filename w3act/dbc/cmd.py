@@ -14,7 +14,8 @@ import json
 import csv
 import os
 import re
-from w3act.site import GenerateSitePages
+from w3act.dbc.site import GenerateSitePages
+from w3act.dbc.generate_acls import generate_oa_allow_list
 
 # Set up a logging handler:
 handler = logging.StreamHandler()
@@ -38,6 +39,8 @@ def get_csv(csv_dir, params):
     cur = conn.cursor()
 
     csv_dir = os.path.abspath(csv_dir)
+    if not os.path.exists(csv_dir):
+        os.mkdir(csv_dir)
 
     cur.execute("""SELECT table_name FROM information_schema.tables
            WHERE table_schema = 'public'""")
@@ -426,21 +429,6 @@ def write_json(filename, all):
 
 def main():
     parser = argparse.ArgumentParser('Export and manipulate W3ACT CSV')
-    parser.add_argument('-H', '--db-host', dest='db_host',
-                    type=str, default="localhost",
-                    help="Hostname of W3ACT PostgreSQL database [default: %(default)s]" )
-    parser.add_argument('-P', '--db-port', dest='db_port',
-                    type=int, default=5432,
-                    help="Port number of W3ACT PostgreSQL database [default: %(default)s]" )
-    parser.add_argument('-u', '--db-user', dest='db_user',
-                    type=str, default="w3act",
-                    help="Database user to login with [default: %(default)s]" )
-    parser.add_argument('-p', '--db-pw', dest='db_pw',
-                    type=str, default=None,
-                    help="Database user password [default: %(default)s]" )
-    parser.add_argument('-D', '--db-name', dest='db_name',
-                    type=str, default="w3act",
-                    help="Name of the W3ACT PostgreSQL database [default: %(default)s]" )
     parser.add_argument('-d', '--csv-dir', dest='csv_dir', help="Folder to cache CSV data in.", default="w3act-db-csv")
 
     parser.add_argument('-f', '--frequency', dest="frequency", type=str,
@@ -478,6 +466,21 @@ def main():
 
     # Get CSV
     get_parser = subparsers.add_parser("get-csv", help="Download data from W3ACT PostgreSQL and store as CSV.")
+    get_parser.add_argument('-H', '--db-host', dest='db_host',
+                    type=str, default="localhost",
+                    help="Hostname of W3ACT PostgreSQL database [default: %(default)s]" )
+    get_parser.add_argument('-P', '--db-port', dest='db_port',
+                    type=int, default=5432,
+                    help="Port number of W3ACT PostgreSQL database [default: %(default)s]" )
+    get_parser.add_argument('-u', '--db-user', dest='db_user',
+                    type=str, default="w3act",
+                    help="Database user to login with [default: %(default)s]" )
+    get_parser.add_argument('-p', '--db-pw', dest='db_pw',
+                    type=str, default=None,
+                    help="Database user password [default: %(default)s]" )
+    get_parser.add_argument('-D', '--db-name', dest='db_name',
+                    type=str, default="w3act",
+                    help="Name of the W3ACT PostgreSQL database [default: %(default)s]" )
 
     # Turn to JSON
     to_json_parser = subparsers.add_parser("csv-to-json", help="Load CSV and store as JSON.")
@@ -485,8 +488,12 @@ def main():
     # Create
     urllist_parser = subparsers.add_parser("list-urls", help="List URLs from Targets in the W3ACT CSV data.")
 
-    # Generate static site version
+    # Generate crawl feed
     crawlfeed_parser = subparsers.add_parser("crawl-feed", help="Generate crawl-feed format files from W3ACT CSV data.")
+
+    # Generate crawl feed
+    acl_parser = subparsers.add_parser("gen-acl", help="Generate aclj from W3ACT CSV data.")
+    acl_parser.add_argument('output_file', type=str, help="File to write output path to.")
 
     # Generate static site version
     sitegen_parser = subparsers.add_parser("gen-site", help="Generate Hugo static site source files from W3ACT CSV data.")
@@ -536,6 +543,14 @@ def main():
             write_json("%s.json" % args.csv_dir, all)
         elif args.action == "csv-to-zip":
             csv_to_zip(args.csv_dir)
+        elif args.action == "gen-acl":
+            # Generate the OA list:
+            targets = filtered_targets(all['targets'], frequency='all', terms='oa', include_expired=True, include_hidden=False)
+            acls = generate_oa_allow_list(targets)
+            with open(args.output_file, 'w') as f:
+                for line in acls:
+                    f.write("%s\n" % line)
+
         elif args.action == "gen-site":
             sg = GenerateSitePages(all, "/Users/andy/Documents/workspace/ukwa-site")
             sg.generate()

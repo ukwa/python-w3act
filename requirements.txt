@@ -11,5 +11,6 @@ PyYAML==5.1.2
 requests==2.22.0
 requests-file==1.4.3
 six==1.12.0
+surt==0.3.1
 tldextract==2.2.1
 urllib3==1.25.3
