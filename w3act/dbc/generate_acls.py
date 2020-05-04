@@ -44,6 +44,7 @@ CDN_SURTS = [
     'http://(net,cloudfront,',
     'http://(com,googleusercontent,',
     # Various media hosts used by BBC pages:
+    'http://(uk,co,bbcimg,',
     'http://(uk,co,bbci,',
     # Allow Twitter Service Worker and API.
     'http://(com,twitter)/sw.js',
