@@ -17,6 +17,7 @@ import re
 from w3act.dbc.client import get_csv, load_csv, filtered_targets, csv_to_zip, to_crawl_feed_format
 from w3act.dbc.site import GenerateSitePages
 from w3act.dbc.generate_acls import generate_oa_allow_list
+from w3act.dbc.generate_search_annotations import generate_search_annotations
 
 # Set up overall logging config:
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s: %(levelname)s - %(name)s - %(message)s')
@@ -30,6 +31,7 @@ def write_json(filename, all):
 
 def main():
     parser = argparse.ArgumentParser('Export and manipulate W3ACT CSV')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose logging.')
     parser.add_argument('-d', '--csv-dir', dest='csv_dir', help="Folder to cache CSV data in.", default="w3act-db-csv")
 
     parser.add_argument('-f', '--frequency', dest="frequency", type=str,
@@ -90,15 +92,24 @@ def main():
     # Generate crawl feed
     crawlfeed_parser = subparsers.add_parser("crawl-feed", help="Generate crawl-feed format files from W3ACT CSV data.")
 
-    # Generate crawl feed
+    # Generate access lists
     acl_parser = subparsers.add_parser("gen-acl", help="Generate aclj from W3ACT CSV data.")
+    acl_parser.add_argument('--format', choices=['pywb','surts'], help="The file format to write: 'pywb' for the pywb aclj format, or 'surts' for a sorted list of SURT prefixes.", default='pywb')
     acl_parser.add_argument('output_file', type=str, help="File to write output path to.")
+
+    # Generate annotations for full-text search indexing:
+    ann_parser = subparsers.add_parser("gen-annotations", help="Generate search annotations from W3ACT CSV data.")
+    ann_parser.add_argument('output_file', type=str, help="File to write output path to.")
 
     # Generate static site version
     sitegen_parser = subparsers.add_parser("gen-site", help="Generate Hugo static site source files from W3ACT CSV data.")
 
     # Parse up:
     args = parser.parse_args()
+
+    # Handle logging
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     # Clean up:
     args.csv_dir = args.csv_dir.rstrip('/')
@@ -145,10 +156,15 @@ def main():
         elif args.action == "gen-acl":
             # Generate the OA list:
             targets = filtered_targets(all['targets'], frequency='all', terms='oa', include_expired=True, include_hidden=False)
-            acls = generate_oa_allow_list(targets)
+            acls = generate_oa_allow_list(targets, fmt=args.format)
             with open(args.output_file, 'w') as f:
                 for line in acls:
                     f.write("%s\n" % line)
+        elif args.action == "gen-annotations":
+            # Pass on unfiltered targets etc.
+            annotations = generate_search_annotations(all['targets'], all['collections'], all['subjects'])
+            with open(args.output_file, 'w') as f_out:
+                f_out.write('{}'.format(json.dumps(annotations, indent=4)))
 
         elif args.action == "gen-site":
             sg = GenerateSitePages(all, "/Users/andy/Documents/workspace/ukwa-site")

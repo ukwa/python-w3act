@@ -170,11 +170,11 @@ def load_csv(csv_dir="./test/w3act-csv"):
             if row['target_id'] != 'target_id':
                 tid = int(row['target_id'])
                 sid = int(row['subject_id'])
-                # Collections by Target
+                # Subjects by Target
                 sids = tid_sid.get(tid, set())
                 sids.add(sid)
                 tid_sid[tid] = sids
-                # Targets by Collection
+                # Targets by Subject
                 tids = tax[sid].get('target_ids', [])
                 tids.append(tid)
                 tax[sid]['target_ids'] = tids
