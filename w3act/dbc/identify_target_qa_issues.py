@@ -277,9 +277,7 @@ df_target_issues = df_target_issues.join(organisations[['title']], on='organisat
 # Add a link to the problem record
 df_target_issues['W3ACT URL'] = w3act_target_url_prefix + df_target_issues.id.astype(str)
 
-# Get rid of the columns we ardf_issue_uk_scope = df_scope[df_scope.professional_judgement].copy()
-# df_issue_uk_scope["issue_reason"] = "Professional Judgement"
-# df_issue_uk_scope["issue_info"] = df_scope.professional_judgement_expen't reporting on
+# Get rid of the columns we aren't reporting on
 df_target_issues = df_target_issues[['title_organisation', 'name', 'email', 'title_target','issue_reason', 'issue_info', 'depth', 'crawl_end_date', 'W3ACT URL']]
 
 # Rename for presentation
