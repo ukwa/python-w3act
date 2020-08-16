@@ -2,8 +2,14 @@
 import json
 import logging
 import datetime
+import pytz
 
 logger = logging.getLogger(__name__)
+
+def convert_to_full_iso(db_datetime):
+    dbdt = datetime.datetime.strptime(db_datetime, '%Y-%m-%d %H:%M:%S')
+    dbdt = dbdt.replace(tzinfo=pytz.utc)
+    return dbdt.isoformat(timespec='milliseconds')
 
 def generate_search_annotations(targets_by_id, collections_by_id, subjects_by_id):
     # Both Collections and Subjects are stored as trees, but to lookup subjects we need to flatten the tree:
@@ -72,13 +78,14 @@ def _add_annotations(annotations, collection, targets_by_id, subjects_by_id, pre
             annotations['collections'][scope][url] = ann
 
     # And add date ranges:
+    # n.b. format from DB/CSV: 2020-03-13 13:16:22.445
     annotations['collectionDateRanges'][collection_name] = {}
     if collection['start_date']:
-        annotations['collectionDateRanges'][collection_name]['start'] = collection['start_date']
+        annotations['collectionDateRanges'][collection_name]['start'] = convert_to_full_iso(collection['start_date'])
     else:
         annotations['collectionDateRanges'][collection_name]['start'] = None
     if collection['end_date']:
-        annotations['collectionDateRanges'][collection_name]['end'] = collection['end_date']
+        annotations['collectionDateRanges'][collection_name]['end'] = convert_to_full_iso(collection['end_date'])
     else:
         annotations['collectionDateRanges'][collection_name]['end'] = None
 
