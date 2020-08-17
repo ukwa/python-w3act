@@ -24,7 +24,8 @@ setup(
     entry_points={
         'console_scripts': [
             'w3act-api=w3act.api.cmd:main',
-            'w3act=w3act.dbc.cmd:main'
+            'w3act=w3act.dbc.cmd:main',
+            'w3act-qa-check=w3act.dbc.identify_target_qa_issues:main'
         ]
     }
 )
