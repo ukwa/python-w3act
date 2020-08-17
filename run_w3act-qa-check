@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# if wa-internal envars needed, source file
+#source ~/gitlab/....
+
+# setup venv
+#### venv created via 'virtualenv -p /usr/local/bin/python3.6 venv'
+export PYTHONPATH=~/github/python-w3act
+source $PYTHONPATH/venv/bin/activate
+cd $PYTHONPATH
+
+# ensure python libraries installed
+pip install -r requirements.txt
+
+# run script
+./venv/bin/w3act-qa-check -m "gil.hoggarth@bl.uk" -f -c "-H ingest -P 5432"
+#./venv/bin/w3act-qa-check -m "Carlos.Rarugal@bl.uk" -f -c "-H ingest -P 5432"
+#./venv/bin/w3act-qa-check -m "Nicola.Bingham@bl.uk, Helena.Byrne@bl.uk" -f -c "-H ingest -P 5432"
