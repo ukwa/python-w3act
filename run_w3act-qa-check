@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
 
+# read script environ argument
+ENVIRON=$1
+if ! [[ ${ENVIRON} =~ dev|beta|prod ]]; then
+        echo "ERROR: Script $0 requires environment argument"
+        exit
+fi
+
 # if wa-internal envars needed, source file
-#source ~/gitlab/....
+if [[ -f ~/gitlab/ukwa-services-env/w3act/${ENVIRON}/w3act.env ]]; then
+	source ~/gitlab/ukwa-services-env/w3act/${ENVIRON}/w3act.env
+else
+	echo "ERROR: wa-internal env file missing"
+	exit
+fi
 
 # setup venv
 #### venv created via 'virtualenv -p /usr/local/bin/python3.6 venv'
@@ -13,6 +25,6 @@ cd $PYTHONPATH
 pip install -r requirements.txt
 
 # run script
-./venv/bin/w3act-qa-check -m "gil.hoggarth@bl.uk" -f -c "-H ingest -P 5432"
-#./venv/bin/w3act-qa-check -m "Carlos.Rarugal@bl.uk" -f -c "-H ingest -P 5432"
-#./venv/bin/w3act-qa-check -m "Nicola.Bingham@bl.uk, Helena.Byrne@bl.uk" -f -c "-H ingest -P 5432"
+./venv/bin/w3act-qa-check -m "gil.hoggarth@bl.uk" -f -c "-H prod1 -P 5432 -p ${W3ACT_PSQL_PASSWORD}"
+#./venv/bin/w3act-qa-check -m "Carlos.Rarugal@bl.uk" -f -c "-H ingest -P 5432 -p ${W3ACT_PSQL_PASSWORD}"
+#./venv/bin/w3act-qa-check -m "Nicola.Bingham@bl.uk, Helena.Byrne@bl.uk" -f -c "-H ingest -P 5432 -p ${W3ACT_PSQL_PASSWORD}"
