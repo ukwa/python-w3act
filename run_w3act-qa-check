@@ -25,6 +25,6 @@ cd $PYTHONPATH
 pip install -r requirements.txt
 
 # run script
-./venv/bin/w3act-qa-check -m "gil.hoggarth@bl.uk" -f -c "-H prod1 -P 5432 -p ${W3ACT_PSQL_PASSWORD}"
-#./venv/bin/w3act-qa-check -m "Carlos.Rarugal@bl.uk" -f -c "-H ingest -P 5432 -p ${W3ACT_PSQL_PASSWORD}"
-#./venv/bin/w3act-qa-check -m "Nicola.Bingham@bl.uk, Helena.Byrne@bl.uk" -f -c "-H ingest -P 5432 -p ${W3ACT_PSQL_PASSWORD}"
+./venv/bin/w3act-qa-check -m "lee.davey@bl.uk,gil.hoggarth@bl.uk" -f -c "-H ingest -P 5434 -U w3act -p ${W3ACT_PSQL_PASSWORD}" -d 300
+#./venv/bin/w3act-qa-check -m "Carlos.Rarugal@bl.uk" -f -c "-H ingest -P 5434 -U w3act -p ${W3ACT_PSQL_PASSWORD}"
+#./venv/bin/w3act-qa-check -m "Nicola.Bingham@bl.uk,Helena.Byrne@bl.uk" -c "-H ingest -P 5434 -U w3act -p ${W3ACT_PSQL_PASSWORD}"
