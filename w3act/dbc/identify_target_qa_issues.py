@@ -257,13 +257,18 @@ def main():
         df_issue_social_media["issue_reason"] = "Social Media"
         df_issue_social_media["issue_info"] = df_temp.urls
 
+        """  
+        #TODO: Fix error when running -f  in df_temp['invalid'] = df_temp.apply... 
+        #      "ValueError: Wrong number of items passed 78, placement implies 1"-      
+
         # shallow crawl - long url, probably won't need frequent crawl
         df_temp = df_scope.copy()
         df_temp['invalid'] = df_temp.apply(lambda x: shallow_crawl(x.urls, x.crawl_frequency), axis=1)  #lambda cos multi column
 
         df_issue_shallow_crawl = df_temp[df_temp['invalid']].copy()
         df_issue_shallow_crawl["issue_reason"] = "Shallow Frequent Crawl"
-        df_issue_shallow_crawl["issue_info"] = df_temp.urls # + "/" + df_temp.crawl_frequency
+        df_issue_shallow_crawl["issue_info"] = df_temp.urls # + "/" + df_temp.crawl_frequency 
+        """
 
         # multiple domains
         df_temp = df_scope.copy()
@@ -287,7 +292,7 @@ def main():
                                       df_issue_subdomain,
                                       df_issue_judgement,
                                       df_issue_social_media,
-                                      df_issue_shallow_crawl,
+                                    #   df_issue_shallow_crawl, TODO: fix function above
                                       df_issue_multiple_domains,
                                       df_issue_seed_count,
                                       df_issue_description,
