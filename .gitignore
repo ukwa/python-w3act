@@ -40,5 +40,6 @@ nosetests.xml
 
 venv*
 .idea/*
+w3act-db-csv.json
 w3act-db-csv.zip
 w3act-db-csv/*
