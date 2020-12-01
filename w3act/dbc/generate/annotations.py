@@ -11,7 +11,7 @@ def convert_to_full_iso(db_datetime):
     dbdt = dbdt.replace(tzinfo=pytz.utc)
     return dbdt.isoformat(timespec='milliseconds')
 
-def generate_search_annotations(targets_by_id, collections_by_id, subjects_by_id):
+def generate_annotations(targets_by_id, collections_by_id, subjects_by_id):
     # Both Collections and Subjects are stored as trees, but to lookup subjects we need to flatten the tree:
     subjects_by_id_flat = {}
     for subject in _flatten_tree(subjects_by_id.values()):

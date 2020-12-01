@@ -14,10 +14,11 @@ import json
 import csv
 import os
 import re
-from w3act.dbc.client import get_csv, load_csv, filtered_targets, csv_to_zip, to_crawl_feed_format
-from w3act.dbc.site import GenerateSitePages
-from w3act.dbc.generate_acls import generate_oa_allow_list
-from w3act.dbc.generate_search_annotations import generate_search_annotations
+from client import get_csv, load_csv, filtered_targets, csv_to_zip, to_crawl_feed_format
+from generate.acls import generate_oa_allow_list
+from generate.annotations import generate_annotations
+from generate.collections_solr import populate_collections_solr
+from generate.site import GenerateSitePages
 
 # Set up overall logging config:
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s: %(levelname)s - %(name)s - %(message)s')
@@ -31,7 +32,7 @@ def write_json(filename, all):
 
 def main():
     parser = argparse.ArgumentParser('Export and manipulate W3ACT CSV')
-    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose logging.')
+    parser.add_argument('-v', '--verbose',  action='count', default=0, help='Logging level; add more -v for more logging.')
     parser.add_argument('-d', '--csv-dir', dest='csv_dir', help="Folder to cache CSV data in.", default="w3act-db-csv")
 
     parser.add_argument('-f', '--frequency', dest="frequency", type=str,
@@ -103,12 +104,21 @@ def main():
 
     # Generate static site version
     sitegen_parser = subparsers.add_parser("gen-site", help="Generate Hugo static site source files from W3ACT CSV data.")
+    sitegen_parser.add_argument('output_dir', type=str, help="Directory to output to.")
+
+    # Update a collections Solr instance
+    colsol_parser = subparsers.add_parser("update-collections-solr", help="Update ukwa-ui-collections-solr instance with these targets and collections.")
+    colsol_parser.add_argument('solr_url', type=str, help="The Solr URL for the ukwa-ui-collections-solr index to populat, e.g. http://host:8983/solr/collection")
 
     # Parse up:
     args = parser.parse_args()
 
-    # Handle logging
-    if args.verbose:
+    # Set up verbose logging:
+    if args.verbose == 1:
+        logging.getLogger().setLevel(logging.INFO)    
+        # PySolr tends to be too chatty at 'INFO':
+        logging.getLogger('pysolr').setLevel(logging.WARNING)
+    elif args.verbose > 1:
         logging.getLogger().setLevel(logging.DEBUG)
 
     # Clean up:
@@ -154,21 +164,29 @@ def main():
         elif args.action == "csv-to-zip":
             csv_to_zip(args.csv_dir)
         elif args.action == "gen-acl":
+            # Generate Open Access targets subset:
+            oa_targets = filtered_targets(all['targets'], frequency='all', terms='oa', include_expired=True, include_hidden=False)
             # Generate the OA list:
-            targets = filtered_targets(all['targets'], frequency='all', terms='oa', include_expired=True, include_hidden=False)
-            acls = generate_oa_allow_list(targets, fmt=args.format)
+            acls = generate_oa_allow_list(oa_targets, fmt=args.format)
             with open(args.output_file, 'w') as f:
                 for line in acls:
                     f.write("%s\n" % line)
         elif args.action == "gen-annotations":
             # Pass on unfiltered targets etc.
-            annotations = generate_search_annotations(all['targets'], all['collections'], all['subjects'])
+            annotations = generate_annotations(all['targets'], all['collections'], all['subjects'])
             with open(args.output_file, 'w') as f_out:
                 f_out.write('{}'.format(json.dumps(annotations, indent=4)))
 
+        elif args.action == "update-collections-solr":
+            # Generate 'all but hidden' targets subset:
+            public_targets = filtered_targets(all['targets'], frequency='all', terms='all', include_expired=True, include_hidden=False)
+            # Send to Solr:
+            populate_collections_solr(args.solr_url, public_targets, all['collections'], all['subjects'])
+
         elif args.action == "gen-site":
-            sg = GenerateSitePages(all, "/Users/andy/Documents/workspace/ukwa-site")
+            sg = GenerateSitePages(all, args.output_dir)
             sg.generate()
+
         elif args.action == "crawl-feed":
             targets = filtered_targets(all['targets'],
                                        frequency=args.frequency,

@@ -362,7 +362,7 @@ def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True,
                 # Let everything through:
                 pass
             elif terms != None:
-                logging.error("Unrecognised terms filter %s! Only None, 'npld', 'oa' and 'all' are implemented!" % terms)
+                logging.error("Unrecognised terms filter '%s'! Only None, 'npld', 'oa' and 'all' are implemented!" % terms)
                 continue
             # Don't bother outputting items that are trivially in scope:
             if omit_uk_tlds and t['is_top_level_domain']:
