@@ -140,6 +140,11 @@ def main():
         # And pull down the data tables as CSV:
         get_csv(csv_dir=args.csv_dir, params=params)
     else:
+        # Fail if args.action is empty
+        if not args.action:
+            print("ERROR! No action specified! Use -h for help.")
+            return
+
         # FIXME Fail if CSV folder is empty/non-existent
 
         # Load in for processing:
@@ -201,7 +206,7 @@ def main():
             write_json("%s.crawl-feed.json" % args.csv_dir, feed)
 
         else:
-            print("No action specified! Use -h flag to see available actions.")
+            print("No known action specified! Use -h flag to see available actions.")
 
 
 if __name__ == "__main__":
