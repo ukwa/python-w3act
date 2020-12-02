@@ -14,11 +14,11 @@ import json
 import csv
 import os
 import re
-from client import get_csv, load_csv, filtered_targets, csv_to_zip, to_crawl_feed_format
-from generate.acls import generate_oa_allow_list
-from generate.annotations import generate_annotations
-from generate.collections_solr import populate_collections_solr
-from generate.site import GenerateSitePages
+from w3act.dbc.client import get_csv, load_csv, filtered_targets, csv_to_zip, to_crawl_feed_format
+from w3act.dbc.generate.acls import generate_oa_allow_list
+from w3act.dbc.generate.annotations import generate_annotations
+from w3act.dbc.generate.collections_solr import populate_collections_solr
+from w3act.dbc.generate.site import GenerateSitePages
 
 # Set up overall logging config:
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s: %(levelname)s - %(name)s - %(message)s')

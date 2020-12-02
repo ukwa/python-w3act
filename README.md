@@ -15,17 +15,17 @@ When developing this code, it can be used as follows. First set up a suitable Py
 
     $ virtualenv -p python3 venv
     $ source venv/bin/activate
-    $ # TODO ADD ANY OS LIBRARIES NEEDED
+    $ # **TODO ADD ANY OS LIBRARIES NEEDED**
     $ pip install -r requirements.txt
 
 To run the development version, rather than installing and calling the `w3act` command, you can use `python ./w3act/dbc/cmd.py`. For example, to see the CLI help:
 
-    $ python ./w3act/dbc/cmd.py -h
+    $ PYTHONPATH=. python ./w3act/dbc/cmd.py -h
 
 The first step is to get a copy of the database downloaded. As of late 2020, this can be done like this:
 
     $ source ~/gitlab/ukwa-services-env/w3act/prod/w3act.env
-    $ python ./w3act/dbc/cmd.py get-csv -H 192.168.45.60 -P 5434 -p $W3ACT_PSQL_PASSWORD
+    $ PYTHONPATH=. python ./w3act/dbc/cmd.py get-csv -H 192.168.45.60 -P 5434 -p $W3ACT_PSQL_PASSWORD
 
 i.e. assuming the internal `ukwa-services-env` repository is available, so we can get the password for the database, and assuming the production database is running on that server and port.
 
@@ -33,5 +33,5 @@ Having downloaded the CSV into the default folder (`./w3act-db-csv`) the other c
 
 e.g. To populate an instance of the ukwa-ui-collections-solr index:
 
-    $ python ./w3act/dbc/cmd.py -v update-collections-solr http://localhost:9021/solr/collections
+    $ PYTHONPATH=. python ./w3act/dbc/cmd.py -v update-collections-solr http://localhost:9021/solr/collections
 
