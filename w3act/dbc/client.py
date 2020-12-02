@@ -143,7 +143,7 @@ def load_csv(csv_dir="./test/w3act-csv"):
                 row['id'] = int(row['id'])
                 tax[row['id']] = row
 
-    # Grab the taxonomies
+    # Grab the collection-target associations...
     logger.info("Loading collection_target associations...")
     tid_cid = {}
     with open(os.path.join(csv_dir,'collection_target.csv'), 'r') as csv_file:
@@ -178,6 +178,32 @@ def load_csv(csv_dir="./test/w3act-csv"):
                 tids = tax[sid].get('target_ids', [])
                 tids.append(tid)
                 tax[sid]['target_ids'] = tids
+
+    # Also get the high-level 'collection areas'...
+    logger.info("Loading collection areas...")
+    caid_cid = {}
+    collection_areas = {}
+    with open(os.path.join(csv_dir,'taxonomy_parents_all.csv'), 'r') as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            if row['taxonomy_id'] != 'taxonomy_id':
+                caid = int(row['taxonomy_id'])
+                cid = int(row['parent_id'])
+                # Collections  by Collection Area
+                cids = caid_cid.get(caid, [])
+                cids.append(cid)
+                caid_cid[caid] = cids
+                if caid not in collection_areas:
+                    collection_areas[caid] = {
+                        'id': caid,
+                        'name': tax[caid]['name'],
+                        'description': tax[caid]['description'],
+                        'collections': caid_cid[caid]
+                    }
+                # Add collection area to collection:
+                tax[cid]['collection_area_id'] = caid
+                tax[cid]['collection_area_name'] = tax[caid]['name']
+                tax[cid]['collection_area_desc'] = tax[caid]['description']
 
     # Watched Target setup
     logger.info("Loading watched_target associations...")
@@ -328,6 +354,7 @@ def load_csv(csv_dir="./test/w3act-csv"):
         'curators' : authors,
         'organisations': orgs,
         'collections': collections,
+        'collection_areas': collection_areas,
         'subjects': subjects,
         'licenses': licenses
     }
