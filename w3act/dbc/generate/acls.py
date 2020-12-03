@@ -43,6 +43,7 @@ CDN_SURTS = [
     'http://(com,blogger,www)/dyn-css/',
     'http://(net,cloudfront,',
     'http://(com,googleusercontent,',
+    'http://(com,googleapis,ajax',
     # Various media hosts used by BBC pages:
     'http://(uk,co,bbcimg,',
     'http://(uk,co,bbci,',
