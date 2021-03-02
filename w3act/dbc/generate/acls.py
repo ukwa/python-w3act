@@ -77,19 +77,21 @@ def generate_surt(url):
     return surtVal
 
 
-def generate_oa_allow_list(targets, fmt="pywb"):
+def generate_acl(targets, include_cdns, fmt="pywb"):
     # collate surts
+    all_urls = set()
     all_surts = set()
     all_surts_and_urls = list()
 
-    # Start with allowing all from know CDNs:
-    for cdn_surt in CDN_SURTS:
-        all_surts.add(cdn_surt)
-        all_surts_and_urls.append({
-            'surt': cdn_surt,
-            'url': cdn_surt
-        })
-    logger.info("%s surts for CDNs added" % len(CDN_SURTS))
+    if include_cdns == True:
+        # Start with allowing all from know CDNs:
+        for cdn_surt in CDN_SURTS:
+            all_surts.add(cdn_surt)
+            all_surts_and_urls.append({
+                'surt': cdn_surt,
+                'url': cdn_surt
+            })
+        logger.info("%s surts for CDNs added" % len(CDN_SURTS))
 
     # Add SURTs from ACT:
     for target in targets:
@@ -113,8 +115,13 @@ def generate_oa_allow_list(targets, fmt="pywb"):
             else:
                 logger.warning("Got no SURT from %s" % seed)
 
+            # Record as URL
+            all_urls.add(seed)
+
     # And write out the SURTs:
-    if fmt == "surts":
+    if fmt == "urls":
+        return sorted(all_urls)
+    elif fmt == "surts":
         return sorted(all_surts)
     elif fmt == "pywb":
         # Return as a pywb acl list:
