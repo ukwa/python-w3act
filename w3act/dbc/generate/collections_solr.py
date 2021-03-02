@@ -23,6 +23,7 @@ def add_collection(s, targets_by_id, col, parent_id):
 
         # Look up all Targets within this Collection and add them.
         targets_sent = 0
+        t_batch = []
         for tid in col.get('target_ids',[]):
             # Get the Target:
             target = targets_by_id.get(tid, None)
@@ -43,7 +44,7 @@ def add_collection(s, targets_by_id, col, parent_id):
                     licenses = ['1000']
 
             # add a document to the Solr index
-            s.add([{
+            t_batch.append({
                 "id": "cid:%i-tid:%i" % (col['id'], target['id']),
                 "type": "target",
                 "parentId": col['id'],
@@ -55,10 +56,18 @@ def add_collection(s, targets_by_id, col, parent_id):
                 "startDate": target["crawl_start_date"],
                 "endDate": target["crawl_end_date"],
                 "licenses": licenses
-            }], commit=False)
+            })
+            # When we have a batch, send:
+            if len(t_batch) > 100:
+                s.add(t_batch, commit=False)
+                # Count successes:
+                targets_sent += len(t_batch)
+                t_batch = []
 
-            # Count successes:
-            targets_sent += 1
+        # Catch the last batch:
+        if len(t_batch) > 0:
+            s.add(t_batch, commit=False)
+            targets_sent += len(t_batch)
         
         # Log targets
         logger.info("Added %i targets of %i in the collection." % (targets_sent, len(targets_by_id)))
