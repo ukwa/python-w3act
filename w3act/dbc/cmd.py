@@ -65,7 +65,7 @@ def main():
     # omit_uk_tlds=False
 
     # Set up the main parser
-    parser = argparse.ArgumentParser('w3act', parents=[common_parser])
+    parser = argparse.ArgumentParser('w3act')
 
     # Set up for sub-commands:
     subparsers = parser.add_subparsers(help='Action to perform', dest='action')
@@ -136,15 +136,17 @@ def main():
     args = parser.parse_args()
 
     # Set up verbose logging:
-    if args.verbose == 1:
-        logging.getLogger().setLevel(logging.INFO)    
-        # PySolr tends to be too chatty at 'INFO':
-        logging.getLogger('pysolr').setLevel(logging.WARNING)
-    elif args.verbose > 1:
-        logging.getLogger().setLevel(logging.DEBUG)
+    if hasattr(args, 'verbose'):
+        if args.verbose == 1:
+            logging.getLogger().setLevel(logging.INFO)    
+            # PySolr tends to be too chatty at 'INFO':
+            logging.getLogger('pysolr').setLevel(logging.WARNING)
+        elif args.verbose > 1:
+            logging.getLogger().setLevel(logging.DEBUG)
 
     # Clean up:
-    args.csv_dir = args.csv_dir.rstrip('/')
+    if hasattr(args, 'csv_dir'):
+        args.csv_dir = args.csv_dir.rstrip('/')
 
     # Handle:
     if args.action == "get-csv":
