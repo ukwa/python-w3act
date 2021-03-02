@@ -26,9 +26,15 @@ logging.basicConfig(level=logging.WARNING, format='%(asctime)s: %(levelname)s - 
 # Set up logger for this module:
 logger = logging.getLogger(__name__)
 
-def write_json(filename, all):
-    with open(filename,"w") as f:
-        json.dump(all, f, indent=2)
+def write_json(filename, all, format='json'):
+    if format == 'json':
+        with open(filename,"w") as f:
+            json.dump(all, f, indent=2)
+    elif format == 'jsonl':
+        with open(filename,"w") as f:
+            for doc in all:
+                json.dump(doc,f)
+                f.write('\n')
 
 def main():
     common_parser = argparse.ArgumentParser(add_help=False)
@@ -106,6 +112,11 @@ def main():
     crawlfeed_parser = subparsers.add_parser("crawl-feed",
         help="Generate crawl-feed format files from W3ACT CSV data.",
         parents=[common_parser, filter_parser])
+    crawlfeed_parser.add_argument('-F', '--format', 
+        choices=['json','jsonl'], 
+        help="The file format to write: 'json' for one large json file, 'jsonl' for JSONLines.", 
+        default='json')
+    crawlfeed_parser.add_argument('output_file', type=str, help="File to write output to.")
 
     # Generate access lists
     acl_parser = subparsers.add_parser("gen-oa-acl", 
@@ -195,7 +206,7 @@ def main():
             feed = []
             for target in matching_targets:
                 feed.append(to_crawl_feed_format(target))
-            write_json("%s.crawl-feed.json" % args.csv_dir, feed)
+            write_json(args.output_file, feed, args.format)
 
         elif args.action == "gen-oa-acl":
             # Generate Open Access targets subset:

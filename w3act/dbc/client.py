@@ -385,6 +385,14 @@ def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True,
             elif terms == 'oa':
                 if not t.get('isOA', None):
                     continue
+            elif terms == 'bypm':
+                # Skip if not OA:
+                if not t.get('isOA', None):
+                    continue
+                # Skip if NPLD:
+                if t.get('isNPLD', None):
+                    continue
+                # i.e. this one has an OA license but is not NPLD, so is BYPM:
             elif terms == 'all':
                 # Let everything through:
                 pass
