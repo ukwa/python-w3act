@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 import shutil
 import json
 import csv
+import sys
 import os
 import re
 from w3act.dbc.client import get_csv, load_csv, filtered_targets, csv_to_zip, to_crawl_feed_format
@@ -28,13 +29,26 @@ logger = logging.getLogger(__name__)
 
 def write_json(filename, all, format='json'):
     if format == 'json':
-        with open(filename,"w") as f:
+        with OutputFileOrStdout(filename) as f:
             json.dump(all, f, indent=2)
     elif format == 'jsonl':
-        with open(filename,"w") as f:
+        with OutputFileOrStdout(filename) as f:
             for doc in all:
                 json.dump(doc,f)
                 f.write('\n')
+
+class OutputFileOrStdout():
+    def __init__(self, output_file):
+        self.output_file = output_file
+    def __enter__(self):
+        if self.output_file == '-':
+            self.writer = sys.stdout
+        else:
+            self.writer = open(self.output_file, 'w')
+        return self.writer
+    def __exit__(self, type, value, traceback):
+        if self.writer is not sys.stdout:
+            self.writer.close()        
 
 def main():
     common_parser = argparse.ArgumentParser(add_help=False)
@@ -198,7 +212,7 @@ def main():
         # Actions to perform:
         if args.action  == "list-urls":
             results = generate_acl(matching_targets, False, fmt=args.format)
-            with open(args.output_file, 'w') as f:
+            with OutputFileOrStdout(args.output_file) as f:
                 for line in results:
                     f.write("%s\n" % line)
 
@@ -213,14 +227,14 @@ def main():
             oa_targets = filtered_targets(all['targets'], frequency='all', terms='oa', include_expired=True, include_hidden=False)
             # Generate the OA list:
             acls = generate_acl(oa_targets, True, fmt=args.format)
-            with open(args.output_file, 'w') as f:
+            with OutputFileOrStdout(args.output_file) as f:
                 for line in acls:
                     f.write("%s\n" % line)
 
         elif args.action == "gen-annotations":
             # Pass on unfiltered targets etc.
             annotations = generate_annotations(all['targets'], all['collections'], all['subjects'])
-            with open(args.output_file, 'w') as f_out:
+            with OutputFileOrStdout(args.output_file) as f_out:
                 f_out.write('{}'.format(json.dumps(annotations, indent=4)))
 
         elif args.action == "update-collections-solr":

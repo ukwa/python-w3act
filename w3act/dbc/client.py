@@ -400,6 +400,7 @@ def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True,
                 logging.error("Unrecognised terms filter '%s'! Only None, 'npld', 'oa' and 'all' are implemented!" % terms)
                 continue
             # Don't bother outputting items that are trivially in scope:
+            # (Note that as this is target-level, this only matches if all seeds are .uk)
             if omit_uk_tlds and t['is_top_level_domain']:
                 continue
             # Don't bother outputing expired items:
