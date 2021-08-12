@@ -45,6 +45,8 @@ CDN_SURTS = [
     'http://(com,googleusercontent,',
     'http://(com,googleapis,ajax',
     # Various media hosts used by BBC pages:
+    # (see e.g. https://github.com/ukwa/ukwa-manage/issues/77)
+    'http://(uk,co,bbc,newsimg,',
     'http://(uk,co,bbcimg,',
     'http://(uk,co,bbci,',
     # Allow Twitter Service Worker and API.
