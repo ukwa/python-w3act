@@ -201,9 +201,9 @@ def load_csv(csv_dir="./test/w3act-csv"):
                         'collections': caid_cid[caid]
                     }
                 # Add collection area to collection:
-                tax[cid]['collection_area_id'] = caid
-                tax[cid]['collection_area_name'] = tax[caid]['name']
-                tax[cid]['collection_area_desc'] = tax[caid]['description']
+                caids = tax[cid].get('collection_area_ids', [])
+                caids.append(caid)
+                tax[cid]['collection_area_ids'] = caids
 
     # Watched Target setup
     logger.info("Loading watched_target associations...")

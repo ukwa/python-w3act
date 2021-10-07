@@ -17,7 +17,7 @@ def add_collection(s, targets_by_id, col, parent_id):
                 "name": col["name"],
                 "description": col["description"],
                 "parentId": parent_id,
-                "collectionAreaId": col.get('collection_area_id', None)
+                "collectionAreaId": col.get('collection_area_ids', [])
             }
         ], commit=False)
 

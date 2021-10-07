@@ -35,3 +35,12 @@ e.g. To populate an instance of the ukwa-ui-collections-solr index:
 
     $ python -m w3act.dbc.cmd -v update-collections-solr http://localhost:9021/solr/collections
 
+
+Example of posting a document to a localhost version for testing:
+
+
+    $ docker run --net host -ti ukwa/python-w3act w3act-api -u $USER -p $PW add-document 9022 20211003002015 https://www.amnesty.org/download/Documents/EUR2500882019ENGLISH.PDF https://www.amnesty.org/en/documents/eur25/0088/2019/en/
+
+
+python -m w3act.dbc.cmd get-csv -H prod1 -p ${W3ACT_PSQL_PASSWORD} -d w3act-db-csv
+python -m w3act.dbc.cmd update-collections-solr -v -d w3act-db-csv http://localhost:9021/solr/collections
