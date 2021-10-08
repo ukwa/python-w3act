@@ -51,6 +51,7 @@ CDN_SURTS = [
     'http://(uk,co,bbci,',
     # Allow Twitter Service Worker and API.
     'http://(com,twitter)/sw.js',
+    'http://(com,twitter)/i/api',
     'http://(com,twitter,api)'
 ]
 
