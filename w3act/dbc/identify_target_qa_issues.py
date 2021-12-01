@@ -171,7 +171,7 @@ def main():
     else:
         logger.info("Today's " + args.w3act_json_file + " doesn't exist - deriving csv files.")
         csv_dir = args.w3act_json_file.replace('.json','')
-        try_command('w3act get-csv -d %s' % csv_dir + db_connection_info)
+        try_command('w3act get-csv -d %s' % csv_dir + ' ' + db_connection_info)
         logger.info("Converting csv to: " + args.w3act_json_file)
         try_command("w3act csv-to-json -d %s" % csv_dir)
 
