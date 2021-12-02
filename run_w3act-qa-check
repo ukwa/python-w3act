@@ -9,10 +9,10 @@ fi
 
 # if wa-internal envars needed, source file
 if [[ -f ~/gitlab/ukwa-services-env/w3act/${ENVIRON}/w3act.env ]]; then
-	source ~/gitlab/ukwa-services-env/w3act/${ENVIRON}/w3act.env
+        source ~/gitlab/ukwa-services-env/w3act/${ENVIRON}/w3act.env
 else
-	echo "ERROR: wa-internal env file missing"
-	exit
+        echo "ERROR: wa-internal env file missing"
+        exit
 fi
 
 # setup venv
@@ -25,5 +25,11 @@ cd $PYTHONPATH
 pip install -r requirements.txt
 
 # run script
-./venv/bin/w3act-qa-check -m "Carlos.Rarugal@bl.uk" -f -c "-H ingest -P 5434 -p ${W3ACT_PSQL_PASSWORD}"
-./venv/bin/w3act-qa-check -m "Nicola.Bingham@bl.uk" -c "-H ingest -P 5434 -p ${W3ACT_PSQL_PASSWORD}"
+if ! [[ ${ENVIRON} == 'dev' ]]; then
+        ./venv/bin/w3act-qa-check -m "Lee.Davey@bl.uk" -f -c "-H prod1 -P 5432 -p ${W3ACT_PSQL_PASSWORD}"
+elif ! [[ ${ENVIRON} == 'beta' ]]; then
+        ./venv/bin/w3act-qa-check -m "Gil.Hoggarth@bl.uk" -f -c "-H prod1 -P 5432 -p ${W3ACT_PSQL_PASSWORD}"
+else
+        ./venv/bin/w3act-qa-check -m "Carlos.Rarugal@bl.uk" -f -c "-H prod1 -P 5432 -p ${W3ACT_PSQL_PASSWORD}"
+        ./venv/bin/w3act-qa-check -m "Nicola.Bingham@bl.uk" -c "-H prod1 -P 5432 -p ${W3ACT_PSQL_PASSWORD}"
+fi
