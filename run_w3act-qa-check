@@ -26,7 +26,7 @@ pip install -r requirements.txt
 
 # run script
 if ! [[ ${ENVIRON} == 'dev' ]]; then
-        ./venv/bin/w3act-qa-check -m "Lee.Davey@bl.uk" -f -c "-H prod1 -P 5432 -p ${W3ACT_PSQL_PASSWORD}"
+        ./venv/bin/w3act-qa-check -f -c "-H prod1 -P 5432 -p ${W3ACT_PSQL_PASSWORD}"
 elif ! [[ ${ENVIRON} == 'beta' ]]; then
         ./venv/bin/w3act-qa-check -m "Gil.Hoggarth@bl.uk" -f -c "-H prod1 -P 5432 -p ${W3ACT_PSQL_PASSWORD}"
 else
