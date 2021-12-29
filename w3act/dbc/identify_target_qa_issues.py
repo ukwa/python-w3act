@@ -123,8 +123,7 @@ def multiple_domains(urls):
     # the list of urls contains more than one domain
     # nb. subdomains don't count: url1=news.xyz.com, url2=sport.xyz.com, url3=xyz.com = 1 domain (xyz.com)
 
-    if len(urls) == 1: return False # single url, no checks needed
-
+    if len(str(urls)) == 1: return False # single url, no checks needed. str wrapper due to pandas (?) issue possibly encountering nulls
     try:
         primary_seed = urls[0]
         primary_domain = tldextract.extract(primary_seed).domain
