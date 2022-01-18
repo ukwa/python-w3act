@@ -118,6 +118,9 @@ def load_csv(csv_dir="./test/w3act-csv"):
         for row in reader:
             if row['id'] != 'id':
                 tid = int(row['target_id'])
+                if tid not in targets:
+                    logger.warning(f"So such Target {tid} - no match for URL row: {row}")
+                    continue
                 urls = targets[tid].get('urls', [])
                 if row['position'] != '':
                     urls.insert(int(row['position']),row['url'])
