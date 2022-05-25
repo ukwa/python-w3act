@@ -406,7 +406,7 @@ def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True,
             # (Note that as this is target-level, this only matches if all seeds are .uk)
             if omit_uk_tlds and t['is_top_level_domain']:
                 continue
-            # Don't bother outputing expired items:
+            # Don't bother outputting expired items:
             if not include_expired and t['crawl_end_date']:
                 end_date = dateutil.parser.parse(t['crawl_end_date'])
                 if end_date < datetime.datetime.now():
