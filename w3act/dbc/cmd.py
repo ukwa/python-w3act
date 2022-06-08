@@ -33,9 +33,17 @@ def write_json(filename, all, format='json'):
             json.dump(all, f, indent=2)
     elif format == 'jsonl':
         with OutputFileOrStdout(filename) as f:
-            for doc in all:
-                json.dump(doc,f)
-                f.write('\n')
+            for w3act_type in all:
+                if w3act_type != "invalid_targets":
+                    for item_key in all[w3act_type]:
+                        item = all[w3act_type][item_key]
+                        item['w3act_type'] = w3act_type
+                        json.dump(item,f)
+                        f.write('\n')
+                else:
+                    print("Skipping invalid_targets...")
+    else:
+        raise Exception(f"Unknown format {format}!")
 
 class OutputFileOrStdout():
     def __init__(self, output_file):
@@ -113,6 +121,10 @@ def main():
     # Turn to JSON
     to_json_parser = subparsers.add_parser("csv-to-json", 
         help="Load CSV and store as JSON.",
+        parents=[common_parser])
+
+    to_jsonl_parser = subparsers.add_parser("csv-to-jsonl", 
+        help="Load CSV and store as JSON Lines.",
         parents=[common_parser])
 
     # Create
@@ -249,6 +261,9 @@ def main():
 
         elif args.action == "csv-to-json":
             write_json("%s.json" % args.csv_dir, all)
+
+        elif args.action == "csv-to-jsonl":
+            write_json("%s.jsonl" % args.csv_dir, all, format='jsonl')
 
         elif args.action == "csv-to-zip":
             csv_to_zip(args.csv_dir)

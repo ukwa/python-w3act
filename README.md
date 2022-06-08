@@ -22,10 +22,10 @@ To run the development version, rather than installing and calling the `w3act` c
 
     $ python -m w3act.dbc.cmd -h
 
-The first step is to get a copy of the database downloaded. As of late 2020, this can be done like this:
+The first step is to get a copy of the database downloaded. As of June 2022, this can be done like this:
 
     $ source ~/gitlab/ukwa-services-env/w3act/prod/w3act.env
-    $ python -m w3act.dbc.cmd get-csv -H 192.168.45.60 -P 5434 -p $W3ACT_PSQL_PASSWORD
+    $ python -m w3act.dbc.cmd get-csv -H prod1.n45.wa.bl.uk -P 5432 -p $W3ACT_PSQL_PASSWORD
 
 i.e. assuming the internal `ukwa-services-env` repository is available, so we can get the password for the database, and assuming the production database is running on that server and port.
 
