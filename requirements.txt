@@ -4,7 +4,9 @@ chardet==4.0.0
 charset-normalizer==2.0.12
 dateutils==0.6.12
 filelock==3.0.12
+greenlet==1.1.2
 idna==2.10
+importlib-metadata==4.11.4
 isort==5.9.3
 Jinja2==2.11.3
 lazy-object-proxy==1.6.0
@@ -22,6 +24,7 @@ PyYAML==5.4.1
 requests==2.27.1
 requests-file==1.5.1
 six==1.15.0
+SQLAlchemy==1.4.37
 surt==0.3.1
 tldextract==3.1.0
 toml==0.10.2
@@ -29,3 +32,4 @@ typed-ast==1.4.3
 typing-extensions==3.10.0.2
 urllib3==1.26.9
 wrapt==1.12.1
+zipp==3.8.0

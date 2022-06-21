@@ -92,6 +92,7 @@ def extract_taxonomy(tax, tax_name):
 
 def load_csv(csv_dir="./test/w3act-csv"):
     logger.info("Loading W3ACT data...")
+    logger.info("Loading targets...")
     targets = {}
     with open(os.path.join(csv_dir,'target.csv'), 'r') as csv_file:
         reader = csv.DictReader(csv_file)

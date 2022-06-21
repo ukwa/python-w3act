@@ -41,9 +41,35 @@ def write_json(filename, all, format='json'):
                         json.dump(item,f)
                         f.write('\n')
                 else:
-                    print("Skipping invalid_targets...")
+                    for item in all[w3act_type]:
+                        item['w3act_type'] = w3act_type
+                        json.dump(item,f)
+                        f.write('\n')
     else:
         raise Exception(f"Unknown format {format}!")
+
+def write_sqlite(filename, all):
+    if filename == '-':
+        raise Exception("Can't write SQLite to output stream.")
+    import pandas as pd
+    import os.path
+    from sqlalchemy import create_engine
+    # Set up DB:
+    file_path = os.path.abspath(filename)
+    logger.info(f"Writing to {file_path}...")
+    engine = create_engine(f"sqlite:///{file_path}", echo=False)
+    # Process entries:
+    for w3act_type in all:
+        items = []
+        if w3act_type != "invalid_targets":
+            for item_key in all[w3act_type]:
+                item = all[w3act_type][item_key]
+                items.append(item)
+        else:
+            items = all[w3act_type]
+        # Load into pandas
+        df = pd.DataFrame(items)
+        df.to_sql(w3act_type, con=engine, if_exists='replace')
 
 class OutputFileOrStdout():
     def __init__(self, output_file):
@@ -125,6 +151,10 @@ def main():
 
     to_jsonl_parser = subparsers.add_parser("csv-to-jsonl", 
         help="Load CSV and store as JSON Lines.",
+        parents=[common_parser])
+
+    to_sqlite_parser = subparsers.add_parser("csv-to-sqlite", 
+        help="Load CSV and store as a SQLite database. !!! WARNING: This is a work-in-progress and is currently broken!!!",
         parents=[common_parser])
 
     # Create
@@ -264,6 +294,9 @@ def main():
 
         elif args.action == "csv-to-jsonl":
             write_json("%s.jsonl" % args.csv_dir, all, format='jsonl')
+
+        elif args.action == "csv-to-sqlite":
+            write_sqlite("%s.sqlite" % args.csv_dir, all)
 
         elif args.action == "csv-to-zip":
             csv_to_zip(args.csv_dir)
