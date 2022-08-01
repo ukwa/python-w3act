@@ -248,7 +248,7 @@ def main():
         try:
             all = load_csv(csv_dir=args.csv_dir)
         except ValueError as err:
-            print(err.args)
+            print(err)
             return
 
         # Filter if needed:

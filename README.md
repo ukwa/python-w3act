@@ -44,3 +44,12 @@ Example of posting a document to a localhost version for testing:
 
 python -m w3act.dbc.cmd get-csv -H prod1 -p ${W3ACT_PSQL_PASSWORD} -d w3act-db-csv
 python -m w3act.dbc.cmd update-collections-solr -v -d w3act-db-csv http://localhost:9021/solr/collections
+
+## Usage from the command line
+
+When installed for use from the command line, an example of deriving collection data in json format:
+
+    w3act csv-to-api-json -d <csv dir> -o <json output dir>
+
+Both arguments above are optional with defaults 'w3act-db-csv' and 'api_output_dir' respectively.
+
