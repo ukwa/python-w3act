@@ -88,7 +88,6 @@ def main():
     common_parser = argparse.ArgumentParser(add_help=False)
     common_parser.add_argument('-v', '--verbose',  action='count', default=0, help='Logging level; add more -v for more logging.')
     common_parser.add_argument('-d', '--csv-dir', dest='csv_dir', help="Folder to cache CSV data in.", default="w3act-db-csv")
-    common_parser.add_argument('-o', '--api-output-dir', dest='api_output_dir', help="Output directory for files retrieved from API", default="api_output")
 
     filter_parser = argparse.ArgumentParser(add_help=False)
     filter_parser.add_argument('-f', '--frequency', dest="frequency", type=str,
@@ -158,9 +157,10 @@ def main():
         help="Load CSV and store as a SQLite database. !!! WARNING: This is a work-in-progress and is currently broken!!!",
         parents=[common_parser])
 
-    to_json_parser = subparsers.add_parser("csv-to-api-json", 
+    to_api_json_parser = subparsers.add_parser("csv-to-api-json", 
         help="Load CSV and store collections as separate JSON files.",
         parents=[common_parser])
+    to_api_json_parser.add_argument('-o', '--api-output-dir', dest='api_output_dir', help="Output directory for files retrieved from API", default="api_json")
 
     # Create
     urllist_parser = subparsers.add_parser("list-urls", 

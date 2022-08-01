@@ -51,5 +51,5 @@ When installed for use from the command line, an example of deriving collection 
 
     w3act csv-to-api-json -d <csv dir> -o <json output dir>
 
-Both arguments above are optional with defaults 'w3act-db-csv' and 'api_output_dir' respectively.
+Both arguments above are optional with defaults 'w3act-db-csv' and 'api_json' respectively.
 
