@@ -12,7 +12,7 @@ Jinja2==2.11.3
 lazy-object-proxy==1.6.0
 MarkupSafe==1.1.1
 mccabe==0.6.1
-numpy==1.22.0
+numpy==1.21.6
 pandas==1.2.4
 platformdirs==2.3.0
 psycopg2-binary==2.8.6
