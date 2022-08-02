@@ -10,6 +10,7 @@ import csv
 import os
 import re
 
+
 # Set logging for this module and keep the reference handy:
 logger = logging.getLogger( __name__ )
 
@@ -93,6 +94,13 @@ def extract_taxonomy(tax, tax_name):
 def load_csv(csv_dir="./test/w3act-csv"):
     logger.info("Loading W3ACT data...")
     logger.info("Loading targets...")
+
+    if not os.path.exists(csv_dir):
+        raise ValueError("ERROR! CSV folder does not exist: %s" % csv_dir)
+
+    if not os.listdir(csv_dir):
+        raise ValueError("ERROR! CSV folder is empty: %s" % csv_dir)        
+
     targets = {}
     with open(os.path.join(csv_dir,'target.csv'), 'r') as csv_file:
         reader = csv.DictReader(csv_file)
@@ -442,4 +450,61 @@ def to_crawl_feed_format(target):
         "secretId": target['secret_id']
     }
     return cf
+
+
+# walk the collections (a tree of dictionaries and lists), replacing lists of target ids with target data
+def replace_target_ids_with_data(obj): 
+
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == "target_ids":
+                denorm_targets = []
+                for target_id in obj[k]:
+                    try:
+                        denorm_targets.append(target_lookup[target_id]) # target_lookup is a global variable
+                    except KeyError: # missing target
+                        logger.warning("Could not find target %i in target_lookup" % target_id)
+                        denorm_targets.append({'id': str(target_id), 'warning': '<Target Not In Result Set>'})
+                obj[k] = denorm_targets
+            elif isinstance(v, (dict, list)):
+                replace_target_ids_with_data(v)
+
+    elif isinstance(obj, list):
+        for item in obj:
+            replace_target_ids_with_data(item)
+
+
+def rename_target_ids_keys(iterable):
+
+    if type(iterable) is dict:
+        for key in list(iterable.keys()):
+            if key == "target_ids":
+                iterable["targets"] = iterable["target_ids"]
+                del iterable[key]
+        for obj in iterable:
+            rename_target_ids_keys(iterable[obj])
+    elif type(iterable) is list:
+        for obj in iterable:
+            rename_target_ids_keys(obj)
+
+
+def csv_to_api_json(target_data, collection_data, output_dir='/tmp/test'):
+
+    global target_lookup 
+    target_lookup = target_data   
+
+    # replace ids with data via a nested (recursive) update
+    replace_target_ids_with_data(collection_data)
+
+    # now rename the keys themselves, similar method
+    rename_target_ids_keys(collection_data)
+
+    # save the collections with newly expanded target data into one file per collection
+    output_dir = output_dir + '/collection/'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    for k,v in collection_data.items():
+        with open(output_dir  + str(k) + '.json', 'w') as f:
+            json.dump(v, f, indent=4, sort_keys=True)
 

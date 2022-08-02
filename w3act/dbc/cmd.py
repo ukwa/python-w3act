@@ -15,7 +15,7 @@ import csv
 import sys
 import os
 import re
-from w3act.dbc.client import get_csv, load_csv, filtered_targets, csv_to_zip, to_crawl_feed_format
+from w3act.dbc.client import get_csv, load_csv, filtered_targets, csv_to_zip, to_crawl_feed_format, csv_to_api_json
 from w3act.dbc.generate.acls import generate_acl
 from w3act.dbc.generate.annotations import generate_annotations
 from w3act.dbc.generate.collections_solr import populate_collections_solr
@@ -157,6 +157,11 @@ def main():
         help="Load CSV and store as a SQLite database. !!! WARNING: This is a work-in-progress and is currently broken!!!",
         parents=[common_parser])
 
+    to_api_json_parser = subparsers.add_parser("csv-to-api-json", 
+        help="Load CSV and store collections as separate JSON files.",
+        parents=[common_parser])
+    to_api_json_parser.add_argument('-o', '--api-output-dir', dest='api_output_dir', help="Output directory for files retrieved from API", default="api_json")
+
     # Create
     urllist_parser = subparsers.add_parser("list-urls", 
         help="List URLs from Targets in the W3ACT CSV data.",
@@ -213,7 +218,10 @@ def main():
 
     # Clean up:
     if hasattr(args, 'csv_dir'):
-        args.csv_dir = args.csv_dir.rstrip('/')
+        args.csv_dir = args.csv_dir.rstrip('/')    
+        
+    if hasattr(args, 'api_output_dir'):
+        args.api_output_dir = args.api_output_dir.rstrip('/')
 
     # Handle:
     if args.action == "get-csv":
@@ -236,10 +244,12 @@ def main():
             print("ERROR! No action specified! Use -h for help.")
             return
 
-        # FIXME Fail if CSV folder is empty/non-existent
-
         # Load in for processing:
-        all = load_csv(csv_dir=args.csv_dir)
+        try:
+            all = load_csv(csv_dir=args.csv_dir)
+        except ValueError as err:
+            print(err)
+            return
 
         # Filter if needed:
         if args.action in ['list-urls', 'crawl-feed']:
@@ -300,6 +310,9 @@ def main():
 
         elif args.action == "csv-to-zip":
             csv_to_zip(args.csv_dir)
+
+        elif args.action == "csv-to-api-json":
+            csv_to_api_json(all['targets'], all['collections'], args.api_output_dir)
 
         else:
             print("No known action specified! Use -h flag to see available actions.")
