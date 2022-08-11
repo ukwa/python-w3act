@@ -462,9 +462,14 @@ def replace_target_ids_with_data(obj):
                 for target_id in obj[k]:
                     try:
                         denorm_targets.append(target_lookup[target_id]) # target_lookup is a global variable
-                    except KeyError: # missing target
-                        logger.warning("Could not find target %i in target_lookup" % target_id)
-                        denorm_targets.append({'id': str(target_id), 'warning': '<Target Not In Result Set>'})
+                    except KeyError: # not in valid target set
+                        for invalid_target in invalid_target_lookup: # global again
+                            if invalid_target['id'] == target_id:
+                                denorm_targets.append(invalid_target) 
+                                break
+                        else: # invalid target not found either
+                            logger.warning("Could not find target %i in target_lookup" % target_id)
+                            denorm_targets.append({'id': str(target_id), 'warning': '<Target Not In Result Set>'})
                 obj[k] = denorm_targets
             elif isinstance(v, (dict, list)):
                 replace_target_ids_with_data(v)
@@ -488,10 +493,11 @@ def rename_target_ids_keys(iterable):
             rename_target_ids_keys(obj)
 
 
-def csv_to_api_json(target_data, collection_data, output_dir='/tmp/test'):
+def csv_to_api_json(target_data, invalid_target_data, collection_data, output_dir='/tmp/test'):
 
-    global target_lookup 
+    global target_lookup, invalid_target_lookup  
     target_lookup = target_data   
+    invalid_target_lookup = invalid_target_data   
 
     # replace ids with data via a nested (recursive) update
     replace_target_ids_with_data(collection_data)
