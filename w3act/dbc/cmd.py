@@ -312,7 +312,7 @@ def main():
             csv_to_zip(args.csv_dir)
 
         elif args.action == "csv-to-api-json":
-            csv_to_api_json(all['targets'], all['collections'], args.api_output_dir)
+            csv_to_api_json(all['targets'], all['invalid_targets'], all['collections'], args.api_output_dir)
 
         else:
             print("No known action specified! Use -h flag to see available actions.")
