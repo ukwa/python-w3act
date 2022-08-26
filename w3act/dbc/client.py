@@ -10,7 +10,6 @@ import csv
 import os
 import re
 
-
 # Set logging for this module and keep the reference handy:
 logger = logging.getLogger( __name__ )
 
@@ -481,7 +480,7 @@ def replace_target_ids_with_data(obj):
 
 def rename_target_ids_keys(iterable):
 
-    if type(iterable) is dict:
+    if isinstance(iterable, dict):
         for key in list(iterable.keys()):
             if key == "target_ids":
                 iterable["targets"] = iterable["target_ids"]
