@@ -107,9 +107,19 @@ def generate_acl(targets, include_cdns, fmt="pywb"):
                 logger.warn("Nonsense URL [%s] in target %i" % (seed, target['id']))
                 continue
 
-            # Generate SURT
+            # Generate SURT, cap it depending on scope:
             act_surt = generate_surt(seed)
             if act_surt is not None:
+                # Modify host/domain prefixes depending on scope:
+                if re.match(r'^http:\/\/[^\/]+$', act_surt):
+                    scope = target.get('scope', None)
+                    if scope != 'subdomains':
+                        # Map http://(uk,co,eg, to http://(uk,co,eg)/ 
+                        act_surt = act_surt.rstrip(',') + ')/'
+                        logger.debug("Modified: " + scope + " " + act_surt)
+                    else:
+                        logger.debug("Leaving alone: " + scope + " " + act_surt)
+                # Store the SURT:
                 all_surts.add(act_surt)
                 all_surts_and_urls.append({
                     'surt': act_surt,
