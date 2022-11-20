@@ -427,8 +427,9 @@ def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True,
         return filtered
 
 
-def filtered_collections(collections, omit_unpublished=False):
-    if omit_unpublished:
+def filtered_collections(collections, include_unpublished=False):
+
+    if not include_unpublished:
         # first pass: replace non-publishable collections with empty dicts
         clear_published_collections(collections)
         # second pass: remove those empty dicts
@@ -538,6 +539,7 @@ def csv_to_api_json(target_data, invalid_target_data, collection_data, output_di
     target_lookup = target_data   
     invalid_target_lookup = invalid_target_data   
 
+    
     # replace ids with data via a nested (recursive) update
     replace_target_ids_with_data(collection_data)
     # now rename the keys themselves, similar method

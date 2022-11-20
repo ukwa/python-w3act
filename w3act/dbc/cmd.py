@@ -115,8 +115,8 @@ def main():
                         help='Include targets even if the crawl end date has past. [default: %(default)s]')
 
     
-    # Whether to include collections that should not be published 
-    filter_parser.add_argument('--omit-unpublished-collections', dest='omit_unpublished', action='store_true', default=False,
+    # Whether to include collections that should not be published (default: no)
+    filter_parser.add_argument('--include-unpublished-collections', dest='include_unpublished', action='store_true', default=False,
                         help='Include collections that are marked "not for publishing". [default: %(default)s]')
 
 
@@ -321,7 +321,7 @@ def main():
             csv_to_api_json(
                 all['targets'], 
                 all['invalid_targets'], 
-                filtered_collections(all['collections'],args.omit_unpublished), 
+                filtered_collections(all['collections'],args.include_unpublished), 
                 args.api_output_dir
                 )
         else:
