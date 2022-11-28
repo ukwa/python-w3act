@@ -89,36 +89,35 @@ def main():
     common_parser.add_argument('-v', '--verbose',  action='count', default=0, help='Logging level; add more -v for more logging.')
     common_parser.add_argument('-d', '--csv-dir', dest='csv_dir', help="Folder to cache CSV data in.", default="w3act-db-csv")
 
-    filter_parser = argparse.ArgumentParser(add_help=False)
-    filter_parser.add_argument('-f', '--frequency', dest="frequency", type=str,
+    target_filter_parser = argparse.ArgumentParser(add_help=False)
+    target_filter_parser.add_argument('-f', '--frequency', dest="frequency", type=str,
                         default='all', choices=[ None, 'nevercrawl', 'daily', 'weekly',
                                                 'monthly', 'quarterly', 'sixmonthly',
                                                 'annual', 'domaincrawl', 'all'],
                         help="Filter targets by crawl frequency (n.b. 'all' means all-but-nevercrawl) [default: %(default)s]")
 
     # Which terms, e.g. NPLD, by-permission, or both, or no terms that permit crawling:
-    filter_parser.add_argument('-t', '--terms', dest='terms', type=str, default='npld',
+    target_filter_parser.add_argument('-t', '--terms', dest='terms', type=str, default='npld',
                         choices=[ 'npld', 'bypm', 'no-terms', 'all'],
                         help="Filter by the terms under which we may crawl. " 
                              "NPLD or by-permission, no terms at all, or all records (no filtering). [default: %(default)s]")
 
     # Whether to include items with UK TLDs in the results. Useful for separating seeds from scope for domain crawls.
-    filter_parser.add_argument('--omit-uk-tlds', dest='omit_uk_tlds', action='store_true', default=False,
+    target_filter_parser.add_argument('--omit-uk-tlds', dest='omit_uk_tlds', action='store_true', default=False,
                         help='Omit URLs that are already in scope, because they have a UK TLD. [default: %(default)s]')
 
     # Whether to include 'hidden' items:
-    filter_parser.add_argument('--include-hidden', dest='include_hidden', action='store_true', default=False,
+    target_filter_parser.add_argument('--include-hidden', dest='include_hidden', action='store_true', default=False,
                         help='Include targets marked as "hidden" in W3ACT. [default: %(default)s]')
 
     # Whether to prevent old targets from being included (i.e. ones with crawl end dates in the past)
-    filter_parser.add_argument('--include-expired', dest='include_expired', action='store_true', default=False,
+    target_filter_parser.add_argument('--include-expired', dest='include_expired', action='store_true', default=False,
                         help='Include targets even if the crawl end date has past. [default: %(default)s]')
-
-    
+  
     # Whether to include collections that should not be published (default: no)
-    filter_parser.add_argument('--include-unpublished-collections', dest='include_unpublished', action='store_true', default=False,
+    collection_filter_parser = argparse.ArgumentParser(add_help=False)
+    collection_filter_parser.add_argument('--include-unpublished-collections', dest='include_unpublished', action='store_true', default=False,
                         help='Include collections that are marked "not for publishing". [default: %(default)s]')
-
 
 #  npld_only=True, frequency=None,
     # omit_hidden=True,
@@ -153,32 +152,32 @@ def main():
     # Turn to JSON
     to_json_parser = subparsers.add_parser("csv-to-json", 
         help="Load CSV and store as JSON.",
-        parents=[common_parser])
+        parents=[common_parser, collection_filter_parser])
 
     to_jsonl_parser = subparsers.add_parser("csv-to-jsonl", 
         help="Load CSV and store as JSON Lines.",
-        parents=[common_parser])
+        parents=[common_parser, collection_filter_parser])
 
     to_sqlite_parser = subparsers.add_parser("csv-to-sqlite", 
         help="Load CSV and store as a SQLite database. !!! WARNING: This is a work-in-progress and is currently broken!!!",
-        parents=[common_parser])
+        parents=[common_parser, collection_filter_parser])
 
     to_api_json_parser = subparsers.add_parser("csv-to-api-json", 
         help="Load CSV and store collections as separate JSON files.",
-        parents=[common_parser, filter_parser])
+        parents=[common_parser, collection_filter_parser])
     to_api_json_parser.add_argument('-o', '--api-output-dir', dest='api_output_dir', help="Output directory for files retrieved from API", default="api_json")
 
     # Create
     urllist_parser = subparsers.add_parser("list-urls", 
         help="List URLs from Targets in the W3ACT CSV data.",
-        parents=[common_parser, filter_parser])
+        parents=[common_parser, target_filter_parser])
     urllist_parser.add_argument('-F', '--format', choices=['pywb','surts','urls'], help="The file format to write: 'pywb' for the pywb aclj format, 'surts' for a sorted list of SURT prefixes, or 'urls' for plain URLs.", default='urls')
     urllist_parser.add_argument('output_file', type=str, help="File to write output path to.")
 
     # Generate crawl feed
     crawlfeed_parser = subparsers.add_parser("crawl-feed",
         help="Generate crawl-feed format files from W3ACT CSV data.",
-        parents=[common_parser, filter_parser])
+        parents=[common_parser, target_filter_parser])
     crawlfeed_parser.add_argument('-F', '--format', 
         choices=['json','jsonl'], 
         help="The file format to write: 'json' for one large json file, 'jsonl' for JSONLines.", 
@@ -195,19 +194,19 @@ def main():
     # Generate annotations for full-text search indexing:
     ann_parser = subparsers.add_parser("gen-annotations", 
         help="Generate search annotations from W3ACT CSV data.",
-        parents=[common_parser])
+        parents=[common_parser, collection_filter_parser])
     ann_parser.add_argument('output_file', type=str, help="File to write output path to.")
 
     # Generate static site version
     sitegen_parser = subparsers.add_parser("gen-site", 
         help="Generate Hugo static site source files from W3ACT CSV data.",
-        parents=[common_parser])
+        parents=[common_parser, collection_filter_parser])
     sitegen_parser.add_argument('output_dir', type=str, help="Directory to output to.")
 
     # Update a collections Solr instance
     colsol_parser = subparsers.add_parser("update-collections-solr", 
         help="Update ukwa-ui-collections-solr instance with these targets and collections.",
-        parents=[common_parser])
+        parents=[common_parser, collection_filter_parser])
     colsol_parser.add_argument('solr_url', type=str, help="The Solr URL for the ukwa-ui-collections-solr index to populat, e.g. http://host:8983/solr/collection")
 
     # Parse up:
@@ -252,12 +251,26 @@ def main():
 
         # Load in for processing:
         try:
-            all = load_csv(csv_dir=args.csv_dir)
+            all = load_csv(csv_dir=args.csv_dir)            
         except ValueError as err:
             print(err)
             return
 
         # Filter if needed:
+        if args.action in [
+            "gen-annotations", 
+            "update-collections-solr",
+            "gen-site",
+            "csv-to-json",
+            "csv-to-jsonl",
+            "csv-to-sqlite",
+            "csv-to-api-json"
+            ]:
+            matching_collections = filtered_collections(all['collections'], args.include_unpublished)
+            # some actions don't handle the collections separately, so replace here in advance
+            if not args.include_unpublished: # else the replacement is redundant; all originally includes everything after load_csv
+                all['collections'] = matching_collections 
+
         if args.action in ['list-urls', 'crawl-feed']:
             matching_targets = filtered_targets(all['targets'],
                                        frequency=args.frequency,
@@ -291,7 +304,11 @@ def main():
 
         elif args.action == "gen-annotations":
             # Pass on unfiltered targets etc.
-            annotations = generate_annotations(all['targets'], all['collections'], all['subjects'])
+            annotations = generate_annotations(
+                all['targets'], 
+                matching_collections, 
+                all['subjects']
+                )
             with OutputFileOrStdout(args.output_file) as f_out:
                 f_out.write('{}'.format(json.dumps(annotations, indent=4)))
 
@@ -299,7 +316,12 @@ def main():
             # Generate 'all but hidden' targets subset:
             public_targets = filtered_targets(all['targets'], frequency='all', terms='all', include_expired=True, include_hidden=False)
             # Send to Solr:
-            populate_collections_solr(args.solr_url, public_targets, all['collections'], all['subjects'])
+            populate_collections_solr(
+                args.solr_url, 
+                public_targets, 
+                matching_collections, 
+                all['subjects']
+            )
 
         elif args.action == "gen-site":
             sg = GenerateSitePages(all, args.output_dir)
@@ -321,7 +343,7 @@ def main():
             csv_to_api_json(
                 all['targets'], 
                 all['invalid_targets'], 
-                filtered_collections(all['collections'],args.include_unpublished), 
+                matching_collections, 
                 args.api_output_dir
                 )
         else:
