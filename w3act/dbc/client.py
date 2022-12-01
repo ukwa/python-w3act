@@ -431,7 +431,7 @@ def filtered_collections(collections, include_unpublished=False):
 
     if not include_unpublished:
         # first pass: replace non-publishable collections with empty dicts
-        clear_published_collections(collections)
+        clear_unpublished_collections(collections)
         # second pass: remove those empty dicts
         remove_empty_collections(collections)
 
@@ -501,22 +501,22 @@ def rename_key(iterable, before_key, after_key):
         for obj in iterable:
             rename_key(obj,before_key,after_key)
 
-def clear_published_collections(obj): 
+def clear_unpublished_collections(obj): 
     if isinstance(obj, dict):
             for k, v in obj.items():
                 if k == "publish" and v == False:
                    obj.clear() # leave an empty collection in place
                    break
                 elif isinstance(v, (dict, list)):
-                    clear_published_collections(v)
+                    clear_unpublished_collections(v)
 
     elif isinstance(obj, list):
         for item in obj:
-            clear_published_collections(item)
+            clear_unpublished_collections(item)
 
 def remove_empty_collections(obj): 
     # we mean here completely empty collection dicts that have been
-    # left behind by clear_published_collections
+    # left behind by clear_unpublished_collections
     if isinstance(obj, dict):
         for k, v in obj.items():
             if k == "children" and isinstance(v, dict):  
