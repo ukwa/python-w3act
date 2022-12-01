@@ -104,7 +104,7 @@ def load_csv(csv_dir="./test/w3act-csv"):
     with open(os.path.join(csv_dir,'target.csv'), 'r') as csv_file:
         reader = csv.DictReader(csv_file)
         for row in reader:
-            if row['id'] != 'id':
+            if row['id'] != 'id': # Skip header row
                 # Turn booleans into proper booleans:
                 tfs = ["active", "hidden", "ignore_robots_txt", "is_in_scope_ip", "is_in_scope_ip_without_license",
                        "is_top_level_domain", "is_uk_hosting", "is_uk_registration", "key_site", "no_ld_criteria_met",
@@ -144,7 +144,7 @@ def load_csv(csv_dir="./test/w3act-csv"):
         for row in reader:
             if row['id'] != 'id':
                 # Turn booleans into proper booleans:
-                tfs = ["publish"]
+                tfs = ["publish"] # ie. ["publish", optional_boolean2, ..., optional_booleanN]
                 for tf in tfs:
                     if row[tf] == 't':
                         row[tf] = True
@@ -427,6 +427,17 @@ def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True,
         return filtered
 
 
+def filtered_collections(collections, include_unpublished=False):
+
+    if not include_unpublished:
+        # first pass: replace non-publishable collections with empty dicts
+        clear_unpublished_collections(collections)
+        # second pass: remove those empty dicts
+        remove_empty_collections(collections)
+
+    return collections
+
+
 def to_crawl_feed_format(target):
     cf = {
         "id": target['id'],
@@ -478,18 +489,48 @@ def replace_target_ids_with_data(obj):
             replace_target_ids_with_data(item)
 
 
-def rename_target_ids_keys(iterable):
-
+def rename_key(iterable, before_key, after_key):
     if isinstance(iterable, dict):
         for key in list(iterable.keys()):
-            if key == "target_ids":
-                iterable["targets"] = iterable["target_ids"]
+            if key == before_key:
+                iterable[after_key] = iterable[before_key]
                 del iterable[key]
         for obj in iterable:
-            rename_target_ids_keys(iterable[obj])
+            rename_key(iterable[obj], before_key, after_key)
     elif type(iterable) is list:
         for obj in iterable:
-            rename_target_ids_keys(obj)
+            rename_key(obj,before_key,after_key)
+
+def clear_unpublished_collections(obj): 
+    if isinstance(obj, dict):
+            for k, v in obj.items():
+                if k == "publish" and v == False:
+                   obj.clear() # leave an empty collection in place
+                   break
+                elif isinstance(v, (dict, list)):
+                    clear_unpublished_collections(v)
+
+    elif isinstance(obj, list):
+        for item in obj:
+            clear_unpublished_collections(item)
+
+def remove_empty_collections(obj): 
+    # we mean here completely empty collection dicts that have been
+    # left behind by clear_unpublished_collections
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == "children" and isinstance(v, dict):  
+                for child_key, child_value in v: # now we are looking at the child collections
+                    if isinstance(child_value, dict):
+                        if not child_value: # ie. if its completely empty
+                            del v[child_key]
+               
+            elif isinstance(v, (dict, list)):
+                remove_empty_collections(v)
+
+    elif isinstance(obj, list):
+        for item in obj:
+            remove_empty_collections(item)
 
 
 def csv_to_api_json(target_data, invalid_target_data, collection_data, output_dir='/tmp/test'):
@@ -498,11 +539,11 @@ def csv_to_api_json(target_data, invalid_target_data, collection_data, output_di
     target_lookup = target_data   
     invalid_target_lookup = invalid_target_data   
 
+    
     # replace ids with data via a nested (recursive) update
     replace_target_ids_with_data(collection_data)
-
     # now rename the keys themselves, similar method
-    rename_target_ids_keys(collection_data)
+    rename_key(collection_data, "target_ids", "targets")
 
     # save the collections with newly expanded target data into one file per collection
     output_dir = output_dir + '/collection/'
