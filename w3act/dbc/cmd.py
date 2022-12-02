@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.WARNING, format='%(asctime)s: %(levelname)s - 
 # Set up logger for this module:
 logger = logging.getLogger(__name__)
 
-def write_json(filename, all, format='json'):
+def write_json(filename, all, format='json', include_w3act_type=True):
     if format == 'json':
         with OutputFileOrStdout(filename) as f:
             json.dump(all, f, indent=2)
@@ -35,14 +35,17 @@ def write_json(filename, all, format='json'):
         with OutputFileOrStdout(filename) as f:
             for w3act_type in all:
                 if w3act_type != "invalid_targets":
+                    logger.debug(f"Looking at w3act_type={w3act_type}")
                     for item_key in all[w3act_type]:
                         item = all[w3act_type][item_key]
-                        item['w3act_type'] = w3act_type
+                        if include_w3act_type:
+                            item['w3act_type'] = w3act_type
                         json.dump(item,f)
                         f.write('\n')
                 else:
                     for item in all[w3act_type]:
-                        item['w3act_type'] = w3act_type
+                        if include_w3act_type:
+                            item['w3act_type'] = w3act_type
                         json.dump(item,f)
                         f.write('\n')
     else:
@@ -288,10 +291,12 @@ def main():
                     f.write("%s\n" % line)
 
         elif args.action == "crawl-feed":
-            feed = []
+            feed = {}
+            feed['targets'] = {}
             for target in matching_targets:
-                feed.append(to_crawl_feed_format(target))
-            write_json(args.output_file, feed, args.format)
+                tid = target['id']
+                feed['targets'][tid] = to_crawl_feed_format(target)
+            write_json(args.output_file, feed, args.format, include_w3act_type=False)
 
         elif args.action == "gen-oa-acl":
             # Generate Open Access targets subset:
