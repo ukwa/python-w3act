@@ -1,0 +1,14 @@
+version: "3.2"
+
+services:
+
+  cmd:
+    command: bash
+    build:
+      context: .
+      args:
+        http_proxy: ${HTTP_PROXY}
+        https_proxy: ${HTTPS_PROXY}
+    volumes:
+      - .:/host
+
