@@ -210,7 +210,7 @@ def main():
     colsol_parser = subparsers.add_parser("update-collections-solr", 
         help="Update ukwa-ui-collections-solr instance with these targets and collections.",
         parents=[common_parser, collection_filter_parser])
-    colsol_parser.add_argument('solr_url', type=str, help="The Solr URL for the ukwa-ui-collections-solr index to populat, e.g. http://host:8983/solr/collection")
+    colsol_parser.add_argument('solr_url', type=str, help="The Solr URL for the ukwa-ui-collections-solr index to populate, e.g. http://host:8983/solr/collection")
 
     # Parse up:
     args = parser.parse_args()

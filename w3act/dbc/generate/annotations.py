@@ -50,6 +50,7 @@ def _flatten_tree(collection):
 
 def _add_annotations(annotations, collection, targets_by_id, subjects_by_id, prefix=""):
     # assemble full collection name:
+    logger.info(f"Adding annotation to collection: {collection}")
     collection_name = "%s%s" % (prefix, collection['name'])
     # deal with all targets:
     for tid in collection.get('target_ids',[]):

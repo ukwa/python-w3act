@@ -6,6 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 def add_collection(s, targets_by_id, col, parent_id):
+    logger.info(f"Adding collection {dict(col)}...")
     if col['publish']:
         logger.info("Publishing collection '%s'..." % col['name'])
 

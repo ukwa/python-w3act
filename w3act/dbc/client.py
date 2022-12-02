@@ -430,10 +430,12 @@ def filtered_targets(targets, frequency=None, terms='npld', include_hidden=True,
 def filtered_collections(collections, include_unpublished=False):
 
     if not include_unpublished:
-        # first pass: replace non-publishable collections with empty dicts
-        clear_unpublished_collections(collections)
-        # second pass: remove those empty dicts
-        remove_empty_collections(collections)
+        new_collections = {}
+        for cid in collections:
+            new_collection = clear_unpublished_collections(collections[cid])
+            if new_collection != None:
+                new_collections[cid] = new_collection
+        collections = new_collections
 
     return collections
 
@@ -501,37 +503,20 @@ def rename_key(iterable, before_key, after_key):
         for obj in iterable:
             rename_key(obj,before_key,after_key)
 
-def clear_unpublished_collections(obj): 
-    if isinstance(obj, dict):
-            for k, v in obj.items():
-                if k == "publish" and v == False:
-                   obj.clear() # leave an empty collection in place
-                   break
-                elif isinstance(v, (dict, list)):
-                    clear_unpublished_collections(v)
-
-    elif isinstance(obj, list):
-        for item in obj:
-            clear_unpublished_collections(item)
-
-def remove_empty_collections(obj): 
-    # we mean here completely empty collection dicts that have been
-    # left behind by clear_unpublished_collections
-    if isinstance(obj, dict):
-        for k, v in obj.items():
-            if k == "children" and isinstance(v, dict):  
-                for child_key, child_value in v: # now we are looking at the child collections
-                    if isinstance(child_value, dict):
-                        if not child_value: # ie. if its completely empty
-                            del v[child_key]
-               
-            elif isinstance(v, (dict, list)):
-                remove_empty_collections(v)
-
-    elif isinstance(obj, list):
-        for item in obj:
-            remove_empty_collections(item)
-
+def clear_unpublished_collections(collection):
+    logger.info(f"Looking to clear unpublished collections in collection: {collection['name']}...")
+    # If this collection should not be published, signal that it should be dropped:
+    if collection['publish'] == False:
+        return None
+    else:
+        # Accept the collection, and process the child collections:
+        new_children = []
+        for child in collection['children']:
+            new_child = clear_unpublished_collections(child)
+            if new_child != None:
+                new_children.append(new_child)
+        collection['children'] = new_children
+        return collection
 
 def csv_to_api_json(target_data, invalid_target_data, collection_data, output_dir='/tmp/test'):
 
@@ -540,6 +525,7 @@ def csv_to_api_json(target_data, invalid_target_data, collection_data, output_di
     invalid_target_lookup = invalid_target_data   
 
     
+    logger.info("Replacing lists of target_ids with lists of targets...")
     # replace ids with data via a nested (recursive) update
     replace_target_ids_with_data(collection_data)
     # now rename the keys themselves, similar method
@@ -551,6 +537,7 @@ def csv_to_api_json(target_data, invalid_target_data, collection_data, output_di
         os.makedirs(output_dir)
 
     for k,v in collection_data.items():
+        logger.info(f"Writing json file for collection {k}")
         with open(output_dir  + str(k) + '.json', 'w') as f:
             json.dump(v, f, indent=4, sort_keys=True)
 
