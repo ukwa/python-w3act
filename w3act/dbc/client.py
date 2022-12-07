@@ -466,7 +466,6 @@ def to_crawl_feed_format(target):
 
 # walk the collections (a tree of dictionaries and lists), replacing lists of target ids with target data
 def replace_target_ids_with_data(obj): 
-
     if isinstance(obj, dict):
         for k, v in obj.items():
             if k == "target_ids":
@@ -524,7 +523,13 @@ def csv_to_api_json(target_data, invalid_target_data, collection_data, output_di
     target_lookup = target_data   
     invalid_target_lookup = invalid_target_data   
 
-    
+    # remove private curatorial data from targets 
+    # (targets and invalid_targets are slightly different data structures)
+    for target in target_lookup.values():
+        target.pop('author_id', None)
+    for target in invalid_target_lookup:
+        target.pop('author_id', None)
+
     logger.info("Replacing lists of target_ids with lists of targets...")
     # replace ids with data via a nested (recursive) update
     replace_target_ids_with_data(collection_data)
