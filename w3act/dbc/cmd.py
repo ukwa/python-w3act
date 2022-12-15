@@ -349,6 +349,7 @@ def main():
                 all['targets'], 
                 all['invalid_targets'], 
                 matching_collections, 
+                all['curators'],
                 args.api_output_dir
                 )
         else:
