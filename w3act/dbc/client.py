@@ -465,16 +465,21 @@ def to_crawl_feed_format(target):
 
 
 def remove_curator_info(targets, curators):
+
+    curator_names = []
+    for curator in curators:
+        if curator['name'] in "admin,readonly": 
+            continue
+        curator_names.append(curator['name'])
+
     for target in targets:
         target.pop('author_id', None)
-        for curator in curators:
-            if curator['name'] in "admin,readonly": 
-                continue
-            #check all string fields in target to see if they contain curator name
-            for key in target:
-                if isinstance(target[key], str):
-                    if curator['name'] in target[key]:
-                        target[key] = target[key].replace(curator['name'], 'the curator')
+        for key in target:
+            if isinstance(target[key], str): # I originally checked against a specific list of fields but this is more robust and not much slower
+                if key == 'title': continue # occasional hit but shouldn't matter
+                for curator_name in curator_names:
+                    if curator_name in target[key]:
+                        target[key] = target[key].replace(curator_name, 'the curator')
 
 
 # walk the collections (a tree of dictionaries and lists), replacing lists of target ids with target data
