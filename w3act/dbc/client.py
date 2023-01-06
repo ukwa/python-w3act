@@ -464,9 +464,26 @@ def to_crawl_feed_format(target):
     return cf
 
 
+def remove_curator_info(targets, curators):
+
+    curator_names = []
+    for curator in curators:
+        if curator['name'] in "admin,readonly": 
+            continue
+        curator_names.append(curator['name'])
+
+    for target in targets:
+        target.pop('author_id', None)
+        for key in target:
+            if isinstance(target[key], str): # I originally checked against a specific list of fields but this is more robust and not much slower
+                if key == 'title': continue # occasional hit but shouldn't matter
+                for curator_name in curator_names:
+                    if curator_name in target[key]:
+                        target[key] = target[key].replace(curator_name, 'the curator')
+
+
 # walk the collections (a tree of dictionaries and lists), replacing lists of target ids with target data
 def replace_target_ids_with_data(obj): 
-
     if isinstance(obj, dict):
         for k, v in obj.items():
             if k == "target_ids":
@@ -518,13 +535,17 @@ def clear_unpublished_collections(collection):
         collection['children'] = new_children
         return collection
 
-def csv_to_api_json(target_data, invalid_target_data, collection_data, output_dir='/tmp/test'):
+def csv_to_api_json(target_data, invalid_target_data, collection_data, curators, output_dir='/tmp/test'):
 
     global target_lookup, invalid_target_lookup  
     target_lookup = target_data   
     invalid_target_lookup = invalid_target_data   
 
-    
+    # remove private curatorial data from targets 
+    # (targets and invalid_targets are slightly different data structures)
+    remove_curator_info(target_lookup.values(), curators.values())
+    remove_curator_info(invalid_target_lookup, curators.values())
+
     logger.info("Replacing lists of target_ids with lists of targets...")
     # replace ids with data via a nested (recursive) update
     replace_target_ids_with_data(collection_data)
