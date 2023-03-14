@@ -76,9 +76,9 @@ def try_command(command):
 
 def invalid_URL(urls):
     # true returned if:
-    # primary url doesn't end in a slash or an extension
+    # primary url doesn't end in a slash or an extension, or urls is empty/null
     try:
-        primary_seed = urls[0]
+        primary_seed = urls[0] 
         _, *_, last = primary_seed.split('/')  # last entry in url
 
         if last == '':  # ends /
@@ -86,6 +86,7 @@ def invalid_URL(urls):
         if '.' in last:
             return False  # extension = ok
     except Exception:
+        # eg. urls is empty; or null - pandas casts nulls to floats
         return True  # corrupt url - flag it
 
     # no extension, no trailing /
@@ -123,19 +124,20 @@ def multiple_domains(urls):
     # the list of urls contains more than one domain
     # nb. subdomains don't count: url1=news.xyz.com, url2=sport.xyz.com, url3=xyz.com = 1 domain (xyz.com)
 
-    if len(urls) == 1: return False # single url, no checks needed
-
     try:
+        if len(urls) == 1: return False # single url, no checks needed
+
         primary_seed = urls[0]
         primary_domain = tldextract.extract(primary_seed).domain
 
         for url in urls[1:]:
             if tldextract.extract(url).domain != primary_domain: return True
-
+    
     except Exception:
         return True  # corrupt urls - flag it
 
     return False # all domains match
+
 
 def main():
 
@@ -318,13 +320,10 @@ def main():
     organisations=pd.DataFrame(all['organisations']).transpose()
     df_target_issues = df_target_issues.join(organisations[['title']], on='organisation_id', rsuffix='_organisation', lsuffix='_target', how='inner')
 
-
     # Add a link to the problem record
     df_target_issues['W3ACT URL'] = w3act_target_url_prefix + df_target_issues.id.astype(str)
 
-    # Get rid of the columns we ardf_issue_uk_scope = df_scope[df_scope.professional_judgement].copy()
-    # df_issue_uk_scope["issue_reason"] = "Professional Judgement"
-    # df_issue_uk_scope["issue_info"] = df_scope.professional_judgement_expen't reporting on
+    # Get rid of the columns we aren't reporting on
     df_target_issues = df_target_issues[['title_organisation', 'name', 'email', 'title_target','issue_reason', 'issue_info', 'depth', 'crawl_end_date', 'W3ACT URL']]
 
     # Rename for presentation

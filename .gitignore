@@ -43,3 +43,4 @@ venv*
 w3act-db-csv.json
 w3act-db-csv.zip
 w3act-db-csv/*
+.vscode/settings.json
