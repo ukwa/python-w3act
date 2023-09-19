@@ -49,6 +49,9 @@ CDN_SURTS = [
     'http://(uk,co,bbc,newsimg,',
     'http://(uk,co,bbcimg,',
     'http://(uk,co,bbci,',
+    # Allow YouTube embeds and related CDN (e.g. for manonabeach.com):
+    'http://(com,youtube,www)/embed/,',
+    'http://(com,googlevideo,',
     # Allow Twitter Service Worker and API.
     'http://(com,twitter)/sw.js',
     'http://(com,twitter)/i/api',
