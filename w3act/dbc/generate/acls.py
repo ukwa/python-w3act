@@ -32,18 +32,25 @@ CDN_SURTS = [
     'http://(com,wp,s1',
     'http://(com,wp,s2',
     'http://(com,wordpress,files,',
-    'http://(com,twimg,',
     'http://(com,blogspot,bp,',
     'http://(com,blogblog,img1',
     'http://(com,blogblog,img2',
     'http://(com,squarespace,static)',
-    'http://(net,typekit,use)',
     'http://(com,blogger)/img/',
     'http://(com,blogger)/static/',
     'http://(com,blogger)/dyn-css/',
-    'http://(net,cloudfront,',
+    'http://(com,jquery,code',
+    'http://(com,cloudflare,cdnjs',
+    'http://(com,github,cloud',
+    'http://(com,gravatar)/avatar/',
+    'http://(com,gravatar,secure)/avatar/',
     'http://(com,googleusercontent,',
     'http://(com,googleapis,ajax',
+    'http://(com,googleapis,fonts',
+    'http://(com,google)/jsapi',
+    'http://(com,google,apis',
+    'http://(net,cloudfront,',
+    'http://(net,typekit,use)',
     # Various media hosts used by BBC pages:
     # (see e.g. https://github.com/ukwa/ukwa-manage/issues/77)
     'http://(uk,co,bbc,newsimg,',
@@ -52,10 +59,19 @@ CDN_SURTS = [
     # Allow YouTube embeds and related CDN (e.g. for manonabeach.com):
     'http://(com,youtube)/embed/,', # No www as that gets dropped on canonicalization
     'http://(com,googlevideo,',
-    # Allow Twitter Service Worker and API.
+    'http://(com,youtube)/iframe_api/',
+    'http://(com,youtube)/yts/',
+    'http://(com,youtube,img',
+    'http://(com,ytimg,i',
+    # Allow Twitter Service Worker and API:
     'http://(com,twitter)/sw.js',
     'http://(com,twitter)/i/api',
     'http://(com,twitter,api)'
+    # Twitter embeds/resources:
+    'http://(com,twitter,platform',
+    'http://(com,twimg,',
+    # FB Embeds:
+    'http://(com,facebook)/plugins/like.php',
 ]
 
 
