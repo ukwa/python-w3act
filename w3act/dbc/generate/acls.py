@@ -59,7 +59,8 @@ CDN_SURTS = [
     # Allow YouTube embeds and related CDN (e.g. for manonabeach.com):
     'http://(com,youtube)/embed/,', # No www as that gets dropped on canonicalization
     'http://(com,googlevideo,',
-    'http://(com,youtube)/iframe_api/',
+    'http://(com,youtube)/iframe_api',
+    'http://(com,youtube)/get_video_info',
     'http://(com,youtube)/yts/',
     'http://(com,youtube,img',
     'http://(com,ytimg,i',
