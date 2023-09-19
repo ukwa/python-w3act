@@ -11,9 +11,27 @@ import tldextract
 import unicodedata
 from jinja2 import Environment, PackageLoader
 from urllib.parse import urlparse
+from base64 import urlsafe_b64encode
+
 
 # Set logging for this module and keep the reference handy:
 logger = logging.getLogger( __name__ )
+
+# Helper to turn timestamp etc. into full PWID:
+# (copied from ukwa-api)
+def gen_pwid(wb14_timestamp, url, archive_id='webarchive.org.uk', scope='page', encodeBase64=True):
+    # Format the PWID string:
+    yy1,yy2,MM,dd,hh,mm,ss = re.findall('..', wb14_timestamp)
+    iso_ts = f"{yy1}{yy2}-{MM}-{dd}T{hh}:{hh}:{ss}Z"
+    pwid = f"urn:pwid:{archive_id}:{iso_ts}:page:{url}"
+    
+    # Encode as appropriate:
+    if encodeBase64:
+        pwid_enc = urlsafe_b64encode(pwid.encode('utf-8')).decode('utf-8')
+        return pwid_enc
+    else:
+        return pwid
+
 
 def slugify(value):
     """
@@ -81,7 +99,7 @@ class GenerateSitePages():
         #self.subject_count = len(subjects)
 
         # Filter down, for testing:
-        targets, collections = self.filter_down(targets,collections)
+        #FIXME targets, collections = self.filter_down(targets,collections)
 
         # Index collections by ID:
         collections_by_id = {}
@@ -93,7 +111,7 @@ class GenerateSitePages():
             targets_by_id[int(target['id'])] = target
 
         # Setup template environment:
-        env = Environment(loader=PackageLoader('w3act', 'site_templates'))
+        env = Environment(loader=PackageLoader('w3act.dbc.generate', 'site_templates'))
 
         # Targets
         # FIXME this should build up an 'id' to 'page-source-path' mapping, and link to collections:
@@ -114,14 +132,17 @@ class GenerateSitePages():
                 continue
             # And write:
             rec = {
+                'id': col['id'],
                 'title': col['name'],
             }
             description = ""
             if 'description' in col and col['description'] != None:
                 description = col['description'].replace('\r\n', '\n')
 
-            # Use the ID for the URL:
-            rec['url'] = "collection/%s/" % col['id']
+            # Use the ID as the URL:
+            rec['url'] = f"ukwa/collection/{col['id']}"
+
+            # Store under a slugified file path:
             file_path = "%s/%s" % (base_path, slugify(col['name']))
             # Recurse to generate child collections:
             if 'children' in col:
@@ -137,7 +158,7 @@ class GenerateSitePages():
                 target = targets_by_id.get(tid, None)
                 # FIXME blocking etc.
                 if target:
-                    if target.get('inheritsOA', False) or target.get('inheritsNPLD', False):
+                    if target.get('hidden', False): #target.get('inheritsOA', False) or target.get('inheritsNPLD', False):
                         continue
                     target_ids.append(tid)
                     # Also store the path:
@@ -169,7 +190,7 @@ class GenerateSitePages():
 
     def get_target_file_path(self, target):
         start_date = self.get_target_start_date_force(target)
-        return "%s/%s-%s" % (start_date[:4], start_date[:10], slugify(target['title']))
+        return "%s/%s-%s" % (start_date[:4], start_date[:10], slugify(target['title'][:32]))
 
     def generate_targets(self, env, targets, collections_by_id):
         # Setup specific template:
@@ -195,15 +216,15 @@ class GenerateSitePages():
                 logger.warning("The Target '%s' is hidden!" % target['title'] )
                 # FIXME SHOULD DELETE THE FILE IF IT EXISTS!
                 continue
-            # Skip non-top-level targets:
-            if target.get('inheritsNPLD', False):
-                logger.warning("The Target '%s' inherits NPLD status!" % target['title'] )
-                # FIXME SHOULD DELETE THE FILE IF IT EXISTS!
-                continue
-            if target.get('inheritsOA', False):
-                logger.warning("The Target '%s' inherits OA status!" % target['title'] )
-                # FIXME SHOULD DELETE THE FILE IF IT EXISTS!
-                continue
+            ## Skip non-top-level targets:
+            #if target.get('inheritsNPLD', False):
+            #    logger.warning("The Target '%s' inherits NPLD status!" % target['title'] )
+            #    # FIXME SHOULD DELETE THE FILE IF IT EXISTS!
+            #    continue
+            #if target.get('inheritsOA', False):
+            #    logger.warning("The Target '%s' inherits OA status!" % target['title'] )
+            #    # FIXME SHOULD DELETE THE FILE IF IT EXISTS!
+            #    continue
             # Get the ID, WCT ID preferred:
             tid = target['id']
             if target.get('wct_id', None):
@@ -211,12 +232,12 @@ class GenerateSitePages():
             # Get the url, use the first:
             url = target['urls'][0]
 
-            # Check it's a host-level record:
-            url_path = urlparse(url).path
-            if url_path != '/':
-                logger.warning("The Target '%s' has a path!" % target['title'] )
-                # FIXME SHOULD DELETE THE FILE IF IT EXISTS!
-                continue
+            ## Check it's a host-level record:
+            #url_path = urlparse(url).path
+            #if url_path != '/':
+            #    logger.info("The Target '%s' has a path!" % target['title'] )
+            #    # FIXME SHOULD DELETE THE FILE IF IT EXISTS!
+            #    continue
 
             # Extract the domain:
             parsed_url = tldextract.extract(url)
@@ -230,10 +251,11 @@ class GenerateSitePages():
             start_date_str = target['crawl_start_date']
             if not start_date_str:
                 # FIXME This is a Big Problem
+                logger.warning(f"No start date on Target {tid}!")
                 continue
             start_date =  datetime.datetime.strptime(start_date_str, '%Y-%m-%d %H:%M:%S')
             start_date_iso = start_date.isoformat()
-            wayback_date_str = start_date.strftime('%Y%m%dT%H%M%S')
+            wayback_date_str = start_date.strftime('%Y%m%d%H%M%S')
             url_b64 = base64.b64encode(hashlib.md5(url.encode('utf-8')).digest())
             record_id = "%s/%s" % (wayback_date_str, str(url_b64, "utf-8") )
 
@@ -254,11 +276,14 @@ class GenerateSitePages():
 
             # Otherwise, build the record:
             rec = {
-                'slug': tid,
+                'url': f"ukwa/target/{tid}",
                 'id': target['id'], # Hugo needs strings as identifiers, and we may too later.
+                'pwid': gen_pwid(wayback_date_str, url, encodeBase64=False),
+                'pwid_b64': gen_pwid(wayback_date_str, url, encodeBase64=True),
                 'wct_id': target.get('wct_id', None),
                 'record_id': record_id,
                 'date': start_date_iso,
+                'wayback_date': wayback_date_str,
                 'target_url': url,
                 'title': target['title'],
                 'publisher': publisher,
@@ -277,7 +302,7 @@ class GenerateSitePages():
                 'crawl_frequency': target.get('crawl_frequency', None),
                 'license_status': target.get('license_status', None),
                 'live_site_status': target.get('live_site_status', None),
-                'licenses': target.get('licenses', [])
+                'licenses': target.get('licenses', []),
             }
 
             # For subjects

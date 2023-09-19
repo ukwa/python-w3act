@@ -50,7 +50,7 @@ CDN_SURTS = [
     'http://(uk,co,bbcimg,',
     'http://(uk,co,bbci,',
     # Allow YouTube embeds and related CDN (e.g. for manonabeach.com):
-    'http://(com,youtube,www)/embed/,',
+    'http://(com,youtube)/embed/,', # No www as that gets dropped on canonicalization
     'http://(com,googlevideo,',
     # Allow Twitter Service Worker and API.
     'http://(com,twitter)/sw.js',
